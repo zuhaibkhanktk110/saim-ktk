@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saim Ktk</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Saim Ktk</h1>
+  <p>Cosmetics Sales System</p>
+</header>
+
+<main>
+<section class="dashboard">
+  <div class="box"><h3>آج کی Sale</h3><p id="totalSales">Rs 0</p></div>
+  <div class="box"><h3>آج کا Profit</h3><p id="totalProfit">Rs 0</p></div>
+  <div class="box"><h3>آج کی Sales</h3><p id="totalOrders">0</p></div>
+</section>
+
+<section class="card">
+<h2>نئی Sale</h2>
+<input id="barcode" placeholder="Barcode / Product Code">
+<button onclick="searchProduct()">Product تلاش کریں</button>
+<input id="productName" placeholder="Product Name">
+<div class="row">
+<input id="purchasePrice" type="number" placeholder="Purchase Price">
+<input id="salePrice" type="number" placeholder="Sale Price">
+</div>
+<input id="quantity" type="number" min="1" value="1" placeholder="Quantity">
+<button onclick="saveSale()">Sale Save کریں</button>
+</section>
+
+<section class="card">
+<h2>نیا Product محفوظ کریں</h2>
+<p class="hint">نئے product کو پہلی دفعہ barcode/code، نام اور prices کے ساتھ save کریں۔</p>
+<input id="newBarcode" placeholder="Barcode / Product Code">
+<input id="newName" placeholder="Product Name">
+<div class="row">
+<input id="newCost" type="number" placeholder="Purchase Price">
+<input id="newPrice" type="number" placeholder="Sale Price">
+</div>
+<button onclick="saveProduct()">Product Save کریں</button>
+</section>
+
+<section class="card">
+<h2>آج کی Sales</h2>
+<div id="salesList"></div>
+</section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
