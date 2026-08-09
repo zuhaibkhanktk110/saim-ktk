@@ -2,6 +2,11 @@
 // SAIM KTK - COMPLETE APP.JS
 // ==========================================
 
+
+// ==========================================
+// LOAD DATA
+// ==========================================
+
 let sales = JSON.parse(
     localStorage.getItem("saimKtkSales") || "[]"
 );
@@ -16,271 +21,163 @@ let products = JSON.parse(
 // ==========================================
 
 function today() {
-    return new Date().toISOString().slice(0, 10);
+
+    return new Date()
+        .toISOString()
+        .slice(0, 10);
+
 }
 
 
 // ==========================================
-// OPEN CAMERA / PHOTO
+// SALE CAMERA
 // ==========================================
 
-function openCamera() {
+function openSaleCamera() {
 
-    const input =
-        document.getElementById("productPhoto");
+    const camera =
+        document.getElementById("saleCamera");
 
-    if (!input) {
-        alert("Camera input نہیں ملا۔");
+    if (!camera) {
+
+        alert("Sale Camera نہیں ملا۔");
+
         return;
     }
 
-    input.click();
+    // کوئی barcode شرط نہیں
+    camera.click();
+
 }
 
 
 // ==========================================
-// PHOTO PREVIEW
+// SALE PHOTO TAKEN
 // ==========================================
 
-function previewPhoto(event) {
-
-    const preview =
-        document.getElementById("photoPreview");
+function salePhotoTaken(event) {
 
     const file =
         event.target.files &&
         event.target.files[0];
 
     if (!file) {
-        if (preview) {
-            preview.src = "";
-            preview.style.display = "none";
-        }
         return;
     }
+
+
+    const preview =
+        document.getElementById(
+            "salePhotoPreview"
+        );
+
 
     const reader =
         new FileReader();
 
-    reader.onload = function(e) {
 
-        if (preview) {
+    reader.onload =
+        function(e) {
 
-            preview.src =
-                e.target.result;
+            if (preview) {
 
-            preview.style.display =
-                "block";
-        }
-    };
+                preview.src =
+                    e.target.result;
+
+                preview.style.display =
+                    "block";
+
+            }
+
+        };
+
 
     reader.readAsDataURL(file);
+
 }
 
 
 // ==========================================
-// BARCODE CAMERA
+// PRODUCT CAMERA
 // ==========================================
 
-async function scanProduct() {
+function openProductCamera() {
 
-    const barcodeInput =
-        document.getElementById("barcode");
-
-    if (!barcodeInput) {
-        alert("Barcode field نہیں ملا۔");
-        return;
-    }
-
-    // BarcodeDetector supported?
-    if (!("BarcodeDetector" in window)) {
-
-        alert(
-            "آپ کے browser میں barcode camera scanning supported نہیں ہے۔ براہِ کرم barcode نمبر خود لکھیں۔"
+    const camera =
+        document.getElementById(
+            "productPhoto"
         );
 
-        barcodeInput.focus();
+
+    if (!camera) {
+
+        alert(
+            "Product Camera نہیں ملا۔"
+        );
 
         return;
     }
 
-    try {
 
-        const detector =
-            new BarcodeDetector({
-                formats: [
-                    "ean_13",
-                    "ean_8",
-                    "upc_a",
-                    "upc_e",
-                    "code_128",
-                    "code_39"
-                ]
-            });
+    camera.click();
+
+}
 
 
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    }
-                }
-            });
+// ==========================================
+// PRODUCT PHOTO PREVIEW
+// ==========================================
+
+function previewPhoto(event) {
+
+    const file =
+        event.target.files &&
+        event.target.files[0];
 
 
-        // Create temporary camera
-        const video =
-            document.createElement("video");
-
-        video.setAttribute(
-            "playsinline",
-            ""
+    const preview =
+        document.getElementById(
+            "photoPreview"
         );
 
-        video.autoplay = true;
 
-        video.muted = true;
+    if (!file) {
 
-        video.style.position = "fixed";
-        video.style.left = "10px";
-        video.style.right = "10px";
-        video.style.top = "100px";
-        video.style.width = "calc(100% - 20px)";
-        video.style.maxHeight = "60vh";
-        video.style.background = "black";
-        video.style.zIndex = "99999";
-        video.style.borderRadius = "15px";
+        if (preview) {
 
+            preview.src = "";
 
-        const closeButton =
-            document.createElement("button");
+            preview.style.display =
+                "none";
 
-        closeButton.innerText =
-            "✖ Camera بند کریں";
-
-        closeButton.style.position =
-            "fixed";
-
-        closeButton.style.bottom =
-            "30px";
-
-        closeButton.style.left =
-            "50%";
-
-        closeButton.style.transform =
-            "translateX(-50%)";
-
-        closeButton.style.zIndex =
-            "100000";
-
-        closeButton.style.padding =
-            "15px 25px";
-
-        closeButton.style.fontSize =
-            "18px";
-
-
-        document.body.appendChild(video);
-        document.body.appendChild(closeButton);
-
-
-        video.srcObject =
-            stream;
-
-
-        await video.play();
-
-
-        let scanning = true;
-
-
-        function closeCamera() {
-
-            scanning = false;
-
-            stream
-                .getTracks()
-                .forEach(function(track) {
-                    track.stop();
-                });
-
-
-            video.remove();
-            closeButton.remove();
         }
 
-
-        closeButton.onclick =
-            closeCamera;
-
-
-        async function scanLoop() {
-
-            if (!scanning) {
-                return;
-            }
-
-
-            try {
-
-                const barcodes =
-                    await detector.detect(video);
-
-
-                if (
-                    barcodes &&
-                    barcodes.length > 0
-                ) {
-
-                    const code =
-                        barcodes[0].rawValue;
-
-
-                    barcodeInput.value =
-                        code;
-
-
-                    closeCamera();
-
-
-                    searchProduct();
-
-                    return;
-                }
-
-            } catch (error) {
-
-                console.log(
-                    "Barcode scan:",
-                    error
-                );
-
-            }
-
-
-            requestAnimationFrame(
-                scanLoop
-            );
-        }
-
-
-        scanLoop();
-
-
-    } catch (error) {
-
-        console.error(
-            "Camera error:",
-            error
-        );
-
-
-        alert(
-            "Camera open نہیں ہو سکا۔ Browser میں Camera Permission Allow کریں۔"
-        );
-
+        return;
     }
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function(e) {
+
+            if (preview) {
+
+                preview.src =
+                    e.target.result;
+
+                preview.style.display =
+                    "block";
+
+            }
+
+        };
+
+
+    reader.readAsDataURL(file);
+
 }
 
 
@@ -288,10 +185,12 @@ async function scanProduct() {
 // SEARCH PRODUCT
 // ==========================================
 
-async function searchProduct() {
+function searchProduct() {
 
     const barcodeInput =
-        document.getElementById("barcode");
+        document.getElementById(
+            "barcode"
+        );
 
 
     if (!barcodeInput) {
@@ -311,7 +210,7 @@ async function searchProduct() {
     if (!code) {
 
         alert(
-            "پہلے Barcode / Product Code لکھیں۔"
+            "Barcode نہ بھی ہو تو کوئی مسئلہ نہیں۔ اگر Product پہلے محفوظ ہے تو Barcode لکھ کر تلاش کریں۔"
         );
 
         return;
@@ -319,17 +218,19 @@ async function searchProduct() {
 
 
     const product =
-        products.find(function(item) {
+        products.find(
+            function(item) {
 
-            return item.barcode === code;
+                return item.barcode === code;
 
-        });
+            }
+        );
 
 
     if (!product) {
 
         alert(
-            "یہ Product محفوظ نہیں ہے۔"
+            "یہ Product ابھی محفوظ نہیں ہے۔"
         );
 
         return;
@@ -355,20 +256,26 @@ async function searchProduct() {
 
 
     if (name) {
+
         name.value =
             product.name || "";
+
     }
 
 
     if (purchase) {
+
         purchase.value =
             product.purchasePrice || "";
+
     }
 
 
     if (sale) {
+
         sale.value =
             product.salePrice || "";
+
     }
 
 
@@ -376,7 +283,7 @@ async function searchProduct() {
 
     const preview =
         document.getElementById(
-            "photoPreview"
+            "salePhotoPreview"
         );
 
 
@@ -390,14 +297,6 @@ async function searchProduct() {
 
         preview.style.display =
             "block";
-
-    } else if (preview) {
-
-        preview.src =
-            "";
-
-        preview.style.display =
-            "none";
 
     }
 
@@ -444,15 +343,17 @@ function saveProduct() {
         );
 
 
+    // Barcode ضروری نہیں رکھا
+    // لیکن product name اور prices ضروری ہیں
+
     if (
-        !barcode ||
         !name ||
         purchasePrice <= 0 ||
         salePrice <= 0
     ) {
 
         alert(
-            "Barcode، Product Name، Purchase Price اور Sale Price مکمل کریں۔"
+            "Product Name، Purchase Price اور Sale Price مکمل کریں۔"
         );
 
         return;
@@ -481,14 +382,24 @@ function saveProduct() {
         };
 
 
-        const index =
-            products.findIndex(
-                function(item) {
+        // اگر barcode موجود ہے تو update
+        // ورنہ نیا product
 
-                    return item.barcode === barcode;
+        let index = -1;
 
-                }
-            );
+
+        if (barcode) {
+
+            index =
+                products.findIndex(
+                    function(item) {
+
+                        return item.barcode === barcode;
+
+                    }
+                );
+
+        }
 
 
         if (index >= 0) {
@@ -518,6 +429,8 @@ function saveProduct() {
             );
 
 
+            // Clear form
+
             document.getElementById(
                 "newBarcode"
             ).value = "";
@@ -539,7 +452,10 @@ function saveProduct() {
 
 
             if (photoInput) {
-                photoInput.value = "";
+
+                photoInput.value =
+                    "";
+
             }
 
 
@@ -556,6 +472,7 @@ function saveProduct() {
 
                 preview.style.display =
                     "none";
+
             }
 
 
@@ -567,7 +484,7 @@ function saveProduct() {
 
 
             alert(
-                "❌ Product save نہیں ہو سکا۔ Browser storage بھر گئی ہے۔"
+                "❌ Product save نہیں ہو سکا۔"
             );
 
         }
@@ -575,7 +492,7 @@ function saveProduct() {
     }
 
 
-    // Photo selected
+    // Photo exists
 
     if (
         photoInput &&
@@ -605,17 +522,17 @@ function saveProduct() {
             function() {
 
                 alert(
-                    "تصویر read نہیں ہو سکی۔"
+                    "تصویر پڑھنے میں مسئلہ آیا۔"
                 );
 
             };
 
 
-        reader.readAsDataURL(
-            file
-        );
+        reader.readAsDataURL(file);
 
     } else {
+
+        // Without photo
 
         saveData("");
 
@@ -762,37 +679,30 @@ function saveSale() {
     ).value = 1;
 
 
+    const preview =
+        document.getElementById(
+            "salePhotoPreview"
+        );
+
+
+    if (preview) {
+
+        preview.src =
+            "";
+
+        preview.style.display =
+            "none";
+
+    }
+
+
     render();
 
 }
 
 
 // ==========================================
-// PHOTO INPUT
-// ==========================================
-
-const photoInput =
-    document.getElementById(
-        "productPhoto"
-    );
-
-
-if (photoInput) {
-
-    photoInput.addEventListener(
-        "change",
-        function(event) {
-
-            previewPhoto(event);
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// RENDER SALES
+// RENDER TODAY SALES
 // ==========================================
 
 function render() {
@@ -805,78 +715,6 @@ function render() {
 
             }
         );
-
-
-    const total =
-        list.reduce(
-            function(sum, item) {
-
-                return sum +
-                    Number(
-                        item.totalSale || 0
-                    );
-
-            },
-            0
-        );
-
-
-    const profit =
-        list.reduce(
-            function(sum, item) {
-
-                return sum +
-                    Number(
-                        item.profit || 0
-                    );
-
-            },
-            0
-        );
-
-
-    const totalSales =
-        document.getElementById(
-            "totalSales"
-        );
-
-
-    const totalProfit =
-        document.getElementById(
-            "totalProfit"
-        );
-
-
-    const totalOrders =
-        document.getElementById(
-            "totalOrders"
-        );
-
-
-    if (totalSales) {
-
-        totalSales.textContent =
-            "Rs " +
-            total.toLocaleString();
-
-    }
-
-
-    if (totalProfit) {
-
-        totalProfit.textContent =
-            "Rs " +
-            profit.toLocaleString();
-
-    }
-
-
-    if (totalOrders) {
-
-        totalOrders.textContent =
-            list.length;
-
-    }
 
 
     const salesList =
@@ -946,7 +784,7 @@ function render() {
 
 
 // ==========================================
-// START
+// START APP
 // ==========================================
 
 render();
