@@ -8,8 +8,8 @@
   "short_name": "Saim ktk",
   "start_url": "/",
   "theme_color": "#ffffff",
-  "description": "Saim Ktk Cosmetics Sales System"
-} "icons": [
+  "description": "Saim Ktk Cosmetics Sales System",
+"icons": [
   {
     "src": "icon-192.png",
     "sizes": "192x192",
