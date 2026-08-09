@@ -1,466 +1,321 @@
-// ==========================================
-// SAIM KTK - COMPLETE APP.JS
-// ==========================================
+/* =====================================================
+   PRODUCT SALE APP
+   ===================================================== */
+
+let products = JSON.parse(localStorage.getItem("products") || "[]");
+let sales = JSON.parse(localStorage.getItem("sales") || "[]");
+
+let selectedProductImage = "";
+let saleImage = "";
 
 
-// ==========================================
-// LOAD SAVED DATA
-// ==========================================
+/* =====================================================
+   CAMERA / IMAGE HANDLING
+   ===================================================== */
 
-let sales = [];
-let products = [];
+document.addEventListener("DOMContentLoaded", function () {
 
-try {
-    sales = JSON.parse(
-        localStorage.getItem("saimKtkSales") || "[]"
-    );
-} catch (error) {
-    sales = [];
+    const productPhoto = document.getElementById("productPhoto");
+    const saleCamera = document.getElementById("saleCamera");
+
+    if (productPhoto) {
+        productPhoto.addEventListener("change", function (event) {
+            handleProductPhoto(event);
+        });
+    }
+
+    if (saleCamera) {
+        saleCamera.addEventListener("change", function (event) {
+            handleSalePhoto(event);
+        });
+    }
+
+    renderSales();
+});
+
+
+/* =====================================================
+   PRODUCT PHOTO
+   ===================================================== */
+
+function handleProductPhoto(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+
+        selectedProductImage = e.target.result;
+
+        const preview = document.getElementById("photoPreview");
+
+        if (preview) {
+            preview.src = selectedProductImage;
+            preview.style.display = "block";
+        }
+    };
+
+    reader.readAsDataURL(file);
 }
 
-try {
-    products = JSON.parse(
-        localStorage.getItem("saimKtkProducts") || "[]"
-    );
-} catch (error) {
-    products = [];
+
+/* =====================================================
+   SALE CAMERA PHOTO
+   ===================================================== */
+
+function handleSalePhoto(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+
+        saleImage = e.target.result;
+
+        /*
+         * اگر barcode موجود ہے تو barcode سے search کریں
+         * اگر barcode خالی ہے تو image سے local product تلاش کریں
+         */
+
+        const barcodeInput = document.getElementById("barcode");
+
+        if (barcodeInput && barcodeInput.value.trim() !== "") {
+
+            searchProduct();
+
+        } else {
+
+            searchProductByImage();
+        }
+    };
+
+    reader.readAsDataURL(file);
 }
 
 
-// ==========================================
-// TODAY
-// ==========================================
-
-function today() {
-
-    const d = new Date();
-
-    const year = d.getFullYear();
-
-    const month = String(
-        d.getMonth() + 1
-    ).padStart(2, "0");
-
-    const day = String(
-        d.getDate()
-    ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-}
-
-
-// ==========================================
-// GET ELEMENT
-// ==========================================
-
-function get(id) {
-    return document.getElementById(id);
-}
-
-
-// ==========================================
-// SEARCH PRODUCT
-// ==========================================
+/* =====================================================
+   SEARCH BY BARCODE
+   ===================================================== */
 
 function searchProduct() {
 
-    const barcodeInput = get("barcode");
+    const barcodeElement = document.getElementById("barcode");
 
-    if (!barcodeInput) {
-        alert("Barcode field نہیں ملا۔");
-        return;
-    }
+    if (!barcodeElement) return;
 
-    const code = barcodeInput.value.trim();
-
-    if (!code) {
-        alert("پہلے Barcode / Product Code لکھیں۔");
-        return;
-    }
-
-
-    const product = products.find(function(item) {
-
-        return String(item.barcode || "").trim() === code;
-
-    });
-
-
-    if (!product) {
-
-        alert(
-            "یہ Product محفوظ نہیں ہے۔ پہلے Product کو Save کریں۔"
-        );
-
-        return;
-    }
-
-
-    const nameInput = get("productName");
-    const purchaseInput = get("purchasePrice");
-    const saleInput = get("salePrice");
-
-    if (nameInput) {
-        nameInput.value = product.name || "";
-    }
-
-    if (purchaseInput) {
-        purchaseInput.value =
-            product.purchasePrice || "";
-    }
-
-    if (saleInput) {
-        saleInput.value =
-            product.salePrice || "";
-    }
-
-
-    // Show saved photo
-    const preview = get("photoPreview");
-
-    if (preview && product.photo) {
-
-        preview.src = product.photo;
-
-        preview.style.display = "block";
-
-    }
-
-}
-
-
-// ==========================================
-// COMPRESS PHOTO
-// ==========================================
-
-function compressImage(file) {
-
-    return new Promise(function(resolve, reject) {
-
-        const reader = new FileReader();
-
-
-        reader.onload = function(event) {
-
-            const image = new Image();
-
-
-            image.onload = function() {
-
-                let width = image.width;
-                let height = image.height;
-
-
-                // Maximum size
-                const maxSize = 900;
-
-
-                if (width > maxSize || height > maxSize) {
-
-                    if (width > height) {
-
-                        height =
-                            Math.round(
-                                height *
-                                maxSize /
-                                width
-                            );
-
-                        width = maxSize;
-
-                    } else {
-
-                        width =
-                            Math.round(
-                                width *
-                                maxSize /
-                                height
-                            );
-
-                        height = maxSize;
-
-                    }
-
-                }
-
-
-                const canvas =
-                    document.createElement("canvas");
-
-
-                canvas.width = width;
-                canvas.height = height;
-
-
-                const context =
-                    canvas.getContext("2d");
-
-
-                context.drawImage(
-                    image,
-                    0,
-                    0,
-                    width,
-                    height
-                );
-
-
-                // Compress JPEG
-                const compressed =
-                    canvas.toDataURL(
-                        "image/jpeg",
-                        0.75
-                    );
-
-
-                resolve(compressed);
-
-            };
-
-
-            image.onerror = function() {
-
-                reject(
-                    new Error("Image load failed")
-                );
-
-            };
-
-
-            image.src = event.target.result;
-
-        };
-
-
-        reader.onerror = function() {
-
-            reject(
-                new Error("File read failed")
-            );
-
-        };
-
-
-        reader.readAsDataURL(file);
-
-    });
-
-}
-
-
-// ==========================================
-// SAVE PRODUCT
-// ==========================================
-
-async function saveProduct() {
-
-    const barcodeInput = get("newBarcode");
-    const nameInput = get("newName");
-    const costInput = get("newCost");
-    const priceInput = get("newPrice");
-    const photoInput = get("productPhoto");
-
-
-    const barcode =
-        barcodeInput ?
-        barcodeInput.value.trim() :
-        "";
-
-
-    const name =
-        nameInput ?
-        nameInput.value.trim() :
-        "";
-
-
-    const purchasePrice =
-        costInput ?
-        Number(costInput.value) :
-        0;
-
-
-    const salePrice =
-        priceInput ?
-        Number(priceInput.value) :
-        0;
-
-
-    // ======================================
-    // VALIDATION
-    // ======================================
+    const barcode = barcodeElement.value.trim();
 
     if (!barcode) {
 
-        alert("Barcode / Product Code لکھیں۔");
-        return;
+        if (saleImage) {
+            searchProductByImage();
+            return;
+        }
 
+        alert("Barcode یا Product کی تصویر دیں۔");
+        return;
     }
+
+    const product = products.find(function (item) {
+
+        return String(item.barcode).trim() === barcode;
+
+    });
+
+    if (!product) {
+
+        alert("یہ Product محفوظ نہیں ہے۔");
+
+        return;
+    }
+
+    fillSaleProduct(product);
+}
+
+
+/* =====================================================
+   SEARCH PRODUCT BY IMAGE
+   ===================================================== */
+
+function searchProductByImage() {
+
+    if (!saleImage) {
+
+        alert("پہلے Product کی تصویر لیں۔");
+
+        return;
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * Browser خود سے تصویر دیکھ کر market price نہیں جان سکتا۔
+     *
+     * یہاں ہم پہلے locally saved products میں image match
+     * کرنے کی کوشش کرتے ہیں۔
+     */
+
+    const product = findProductFromSavedImage(saleImage);
+
+    if (product) {
+
+        fillSaleProduct(product);
+
+        alert("Product تصویر سے مل گیا۔");
+
+        return;
+    }
+
+    /*
+     * اگر product local database میں نہیں ہے تو
+     * AI / Product Recognition API کی ضرورت ہوگی۔
+     */
+
+    alert(
+        "یہ Product ابھی database میں موجود نہیں ہے۔\n\n" +
+        "پہلی دفعہ Product کو نام، Purchase Price اور Sale Price کے ساتھ Save کریں۔\n\n" +
+        "اس کے بعد اسی محفوظ Product کو barcode کے بغیر بھی استعمال کیا جا سکے گا۔"
+    );
+}
+
+
+/* =====================================================
+   FIND PRODUCT FROM SAVED IMAGE
+   ===================================================== */
+
+function findProductFromSavedImage(imageData) {
+
+    /*
+     * Exact image comparison۔
+     *
+     * یہ تب کام کرے گا جب بالکل وہی تصویر دوبارہ استعمال ہو۔
+     */
+
+    return products.find(function (product) {
+
+        return product.image &&
+               product.image === imageData;
+
+    });
+}
+
+
+/* =====================================================
+   FILL SALE FORM
+   ===================================================== */
+
+function fillSaleProduct(product) {
+
+    const name = document.getElementById("productName");
+    const purchase = document.getElementById("purchasePrice");
+    const sale = document.getElementById("salePrice");
+
+    if (name) {
+        name.value = product.name || "";
+    }
+
+    if (purchase) {
+        purchase.value = product.cost || "";
+    }
+
+    if (sale) {
+        sale.value = product.price || "";
+    }
+}
+
+
+/* =====================================================
+   SAVE PRODUCT
+   ===================================================== */
+
+function saveProduct() {
+
+    const barcode =
+        document.getElementById("newBarcode").value.trim();
+
+    const name =
+        document.getElementById("newName").value.trim();
+
+    const cost =
+        Number(document.getElementById("newCost").value);
+
+    const price =
+        Number(document.getElementById("newPrice").value);
 
 
     if (!name) {
 
         alert("Product Name لکھیں۔");
+
         return;
-
     }
 
 
-    if (purchasePrice <= 0) {
+    if (!cost || !price) {
 
-        alert("Purchase Price درست لکھیں۔");
+        alert("Purchase Price اور Sale Price لکھیں۔");
+
         return;
-
     }
 
 
-    if (salePrice <= 0) {
-
-        alert("Sale Price درست لکھیں۔");
-        return;
-
-    }
-
-
-    // ======================================
-    // PHOTO
-    // ======================================
-
-    let photoData = "";
-
-
-    if (
-        photoInput &&
-        photoInput.files &&
-        photoInput.files.length > 0
-    ) {
-
-        const file =
-            photoInput.files[0];
-
-
-        try {
-
-            photoData =
-                await compressImage(file);
-
-        } catch (error) {
-
-            alert(
-                "تصویر process نہیں ہو سکی۔ دوبارہ تصویر لیں۔"
-            );
-
-            return;
-
-        }
-
-    }
-
-
-    // ======================================
-    // PRODUCT OBJECT
-    // ======================================
+    /*
+     * Barcode ضروری نہیں ہے۔
+     */
 
     const product = {
+
+        id: Date.now(),
 
         barcode: barcode,
 
         name: name,
 
-        purchasePrice: purchasePrice,
+        cost: cost,
 
-        salePrice: salePrice,
+        price: price,
 
-        photo: photoData,
+        image: selectedProductImage || "",
 
-        date: today(),
-
-        time: new Date().toLocaleTimeString()
+        createdAt: new Date().toISOString()
 
     };
 
 
-    // ======================================
-    // UPDATE OR ADD
-    // ======================================
+    products.push(product);
 
-    const index =
-        products.findIndex(function(item) {
-
-            return String(
-                item.barcode || ""
-            ).trim() === barcode;
-
-        });
-
-
-    if (index >= 0) {
-
-        products[index] = product;
-
-    } else {
-
-        products.push(product);
-
-    }
-
-
-    // ======================================
-    // SAVE LOCAL STORAGE
-    // ======================================
-
-    try {
-
-        localStorage.setItem(
-            "saimKtkProducts",
-            JSON.stringify(products)
-        );
-
-    } catch (error) {
-
-        alert(
-            "Product save نہیں ہو سکا۔ Browser storage بھر گئی ہے۔"
-        );
-
-        return;
-
-    }
-
-
-    // ======================================
-    // SUCCESS
-    // ======================================
-
-    alert(
-        "✅ Product تصویر کے ساتھ محفوظ ہو گیا۔"
+    localStorage.setItem(
+        "products",
+        JSON.stringify(products)
     );
 
 
-    // ======================================
-    // CLEAR FORM
-    // ======================================
-
-    if (barcodeInput) {
-        barcodeInput.value = "";
-    }
-
-    if (nameInput) {
-        nameInput.value = "";
-    }
-
-    if (costInput) {
-        costInput.value = "";
-    }
-
-    if (priceInput) {
-        priceInput.value = "";
-    }
-
-    if (photoInput) {
-        photoInput.value = "";
-    }
+    alert("Product کامیابی سے Save ہو گیا۔");
 
 
-    const preview = get("photoPreview");
+    /*
+     * Form clear
+     */
+
+    document.getElementById("newBarcode").value = "";
+
+    document.getElementById("newName").value = "";
+
+    document.getElementById("newCost").value = "";
+
+    document.getElementById("newPrice").value = "";
+
+    selectedProductImage = "";
+
+
+    const preview =
+        document.getElementById("photoPreview");
 
     if (preview) {
 
@@ -469,522 +324,198 @@ async function saveProduct() {
         preview.style.display = "none";
 
     }
-
 }
 
 
-// ==========================================
-// PHOTO PREVIEW
-// ==========================================
-
-const productPhoto =
-    get("productPhoto");
-
-const photoPreview =
-    get("photoPreview");
-
-
-if (productPhoto) {
-
-    productPhoto.addEventListener(
-        "change",
-        async function() {
-
-            const file =
-                this.files &&
-                this.files[0];
-
-
-            if (!file) {
-
-                if (photoPreview) {
-
-                    photoPreview.src = "";
-
-                    photoPreview.style.display =
-                        "none";
-
-                }
-
-                return;
-
-            }
-
-
-            try {
-
-                const compressed =
-                    await compressImage(file);
-
-
-                if (photoPreview) {
-
-                    photoPreview.src =
-                        compressed;
-
-                    photoPreview.style.display =
-                        "block";
-
-                }
-
-            } catch (error) {
-
-                alert(
-                    "تصویر preview نہیں ہو سکی۔"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// SALE CAMERA
-// ==========================================
-
-const saleCamera =
-    get("saleCamera");
-
-
-if (saleCamera) {
-
-    saleCamera.addEventListener(
-        "change",
-        async function() {
-
-            const file =
-                this.files &&
-                this.files[0];
-
-
-            if (!file) {
-                return;
-            }
-
-
-            // Try barcode detection
-            if (
-                "BarcodeDetector" in window
-            ) {
-
-                try {
-
-                    const detector =
-                        new BarcodeDetector({
-                            formats: [
-                                "ean_13",
-                                "ean_8",
-                                "code_128",
-                                "code_39",
-                                "upc_a",
-                                "upc_e"
-                            ]
-                        });
-
-
-                    const image =
-                        new Image();
-
-
-                    const imageURL =
-                        URL.createObjectURL(file);
-
-
-                    image.src = imageURL;
-
-
-                    image.onload =
-                        async function() {
-
-                            try {
-
-                                const codes =
-                                    await detector.detect(
-                                        image
-                                    );
-
-
-                                if (
-                                    codes &&
-                                    codes.length > 0
-                                ) {
-
-                                    const code =
-                                        codes[0].rawValue;
-
-
-                                    const barcode =
-                                        get("barcode");
-
-
-                                    if (barcode) {
-
-                                        barcode.value =
-                                            code;
-
-                                    }
-
-
-                                    searchProduct();
-
-                                } else {
-
-                                    alert(
-                                        "Barcode تصویر میں نہیں ملا۔"
-                                    );
-
-                                }
-
-                            } catch (error) {
-
-                                alert(
-                                    "Barcode detect نہیں ہو سکا۔"
-                                );
-
-                            }
-
-
-                            URL.revokeObjectURL(
-                                imageURL
-                            );
-
-                        };
-
-
-                } catch (error) {
-
-                    alert(
-                        "اس browser میں Barcode Scanner support نہیں ہے۔"
-                    );
-
-                }
-
-            } else {
-
-                alert(
-                    "Camera کھل گیا ہے، لیکن اس browser میں automatic barcode scanning support نہیں ہے۔"
-                );
-
-            }
-
-
-            // Allow same photo again
-            this.value = "";
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// SAVE SALE
-// ==========================================
+/* =====================================================
+   SAVE SALE
+   ===================================================== */
 
 function saveSale() {
 
-    const barcodeInput =
-        get("barcode");
-
-    const nameInput =
-        get("productName");
-
-    const purchaseInput =
-        get("purchasePrice");
-
-    const saleInput =
-        get("salePrice");
-
-    const quantityInput =
-        get("quantity");
-
-
     const barcode =
-        barcodeInput ?
-        barcodeInput.value.trim() :
-        "";
-
+        document.getElementById("barcode").value.trim();
 
     const name =
-        nameInput ?
-        nameInput.value.trim() :
-        "";
+        document.getElementById("productName").value.trim();
 
-
-    const purchasePrice =
-        purchaseInput ?
-        Number(purchaseInput.value) :
-        0;
-
+    const purchase =
+        Number(document.getElementById("purchasePrice").value);
 
     const salePrice =
-        saleInput ?
-        Number(saleInput.value) :
-        0;
+        Number(document.getElementById("salePrice").value);
+
+    const quantity =
+        Number(document.getElementById("quantity").value);
 
 
-    let quantity =
-        quantityInput ?
-        Number(quantityInput.value) :
-        1;
+    if (!name) {
+
+        alert("Product تلاش کریں یا Product Name لکھیں۔");
+
+        return;
+    }
+
+
+    if (!salePrice) {
+
+        alert("Sale Price ضروری ہے۔");
+
+        return;
+    }
 
 
     if (!quantity || quantity < 1) {
 
-        quantity = 1;
-
-    }
-
-
-    // ======================================
-    // VALIDATION
-    // ======================================
-
-    if (!name) {
-
-        alert(
-            "Product تلاش کریں یا Product Name لکھیں۔"
-        );
+        alert("Quantity درست لکھیں۔");
 
         return;
-
     }
 
 
-    if (purchasePrice <= 0) {
-
-        alert(
-            "Purchase Price درست لکھیں۔"
-        );
-
-        return;
-
-    }
-
-
-    if (salePrice <= 0) {
-
-        alert(
-            "Sale Price درست لکھیں۔"
-        );
-
-        return;
-
-    }
-
-
-    // ======================================
-    // CALCULATE
-    // ======================================
-
-    const totalSale =
+    const total =
         salePrice * quantity;
 
 
     const profit =
-        (salePrice - purchasePrice) *
-        quantity;
+        (salePrice - purchase) * quantity;
 
-
-    // ======================================
-    // SALE OBJECT
-    // ======================================
 
     const sale = {
+
+        id: Date.now(),
 
         barcode: barcode,
 
         name: name,
 
-        purchasePrice: purchasePrice,
+        purchasePrice: purchase,
 
         salePrice: salePrice,
 
         quantity: quantity,
 
-        totalSale: totalSale,
+        total: total,
 
         profit: profit,
 
-        date: today(),
+        image: saleImage || "",
 
-        time: new Date().toLocaleTimeString()
+        time: new Date().toLocaleString()
 
     };
 
 
     sales.push(sale);
 
-
-    // ======================================
-    // SAVE SALE
-    // ======================================
-
-    try {
-
-        localStorage.setItem(
-            "saimKtkSales",
-            JSON.stringify(sales)
-        );
-
-    } catch (error) {
-
-        alert(
-            "Sale save نہیں ہو سکی۔"
-        );
-
-        return;
-
-    }
-
-
-    alert(
-        "✅ Sale محفوظ ہو گئی۔"
+    localStorage.setItem(
+        "sales",
+        JSON.stringify(sales)
     );
 
 
-    // ======================================
-    // CLEAR SALE FORM
-    // ======================================
-
-    if (barcodeInput) {
-        barcodeInput.value = "";
-    }
-
-    if (nameInput) {
-        nameInput.value = "";
-    }
-
-    if (purchaseInput) {
-        purchaseInput.value = "";
-    }
-
-    if (saleInput) {
-        saleInput.value = "";
-    }
-
-    if (quantityInput) {
-        quantityInput.value = "1";
-    }
+    alert("Sale کامیابی سے Save ہو گئی۔");
 
 
-    if (photoPreview) {
+    clearSaleForm();
 
-        photoPreview.src = "";
-
-        photoPreview.style.display =
-            "none";
-
-    }
-
-
-    render();
-
+    renderSales();
 }
 
 
-// ==========================================
-// RENDER TODAY SALES
-// ==========================================
+/* =====================================================
+   CLEAR SALE FORM
+   ===================================================== */
 
-function render() {
+function clearSaleForm() {
 
-    const salesList =
-        get("salesList");
+    document.getElementById("barcode").value = "";
+
+    document.getElementById("productName").value = "";
+
+    document.getElementById("purchasePrice").value = "";
+
+    document.getElementById("salePrice").value = "";
+
+    document.getElementById("quantity").value = "1";
+
+    saleImage = "";
+}
 
 
-    const todaySales =
-        sales.filter(function(item) {
+/* =====================================================
+   SHOW TODAY SALES
+   ===================================================== */
 
-            return item.date === today();
+function renderSales() {
 
-        });
+    const list =
+        document.getElementById("salesList");
+
+    if (!list) return;
 
 
-    if (!salesList) {
+    if (sales.length === 0) {
+
+        list.innerHTML =
+            "<p>ابھی کوئی آج کی Sale نہیں۔</p>";
+
         return;
     }
 
 
-    if (todaySales.length === 0) {
-
-        salesList.innerHTML =
-            "ابھی کوئی آج کی Sale نہیں۔";
-
-        return;
-
-    }
-
-
-    salesList.innerHTML =
-        todaySales
+    list.innerHTML = sales
         .slice()
         .reverse()
-        .map(function(item) {
+        .map(function (item) {
 
             return `
-
                 <div class="sale-item">
 
-                    <b>
-                        ${escapeHTML(item.name)}
-                    </b>
+                    <h3>${escapeHTML(item.name)}</h3>
 
-                    × ${Number(item.quantity || 1)}
+                    <p>
+                        Quantity:
+                        ${item.quantity}
+                    </p>
 
-                    <br>
+                    <p>
+                        Sale Price:
+                        Rs ${Number(item.salePrice).toLocaleString()}
+                    </p>
 
-                    Sale:
-                    Rs ${Number(
-                        item.totalSale || 0
-                    ).toLocaleString()}
+                    <p>
+                        Total:
+                        Rs ${Number(item.total).toLocaleString()}
+                    </p>
 
-                    <br>
-
-                    <b>
+                    <p>
                         Profit:
-                        Rs ${Number(
-                            item.profit || 0
-                        ).toLocaleString()}
-                    </b>
+                        Rs ${Number(item.profit).toLocaleString()}
+                    </p>
 
-                    <br>
-
-                    ${escapeHTML(
-                        item.time || ""
-                    )}
+                    <small>
+                        ${escapeHTML(item.time || "")}
+                    </small>
 
                 </div>
-
             `;
 
         })
         .join("");
-
 }
 
 
-// ==========================================
-// ESCAPE HTML
-// ==========================================
+/* =====================================================
+   SAFE HTML
+   ===================================================== */
 
 function escapeHTML(value) {
 
-    return String(value || "")
+    return String(value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-
 }
-
-
-// ==========================================
-// START APP
-// ==========================================
-
-render();
