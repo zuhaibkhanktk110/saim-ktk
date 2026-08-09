@@ -1,817 +1,719 @@
-/* =====================================================
-   PRODUCT SALE APP
-   Camera + Photo + Product Save + Search + Sales
-===================================================== */
+/* =========================================================
+   PRODUCT SALE APP - FIXED VERSION
+   Product + Image = IndexedDB
+   Sales = localStorage
+   ========================================================= */
 
-const PRODUCTS_KEY = "products";
-const SALES_KEY = "sales";
+const DB_NAME = "ProductSaleDB";
+const DB_VERSION = 1;
+const STORE_NAME = "products";
 
-/* =========================
-   START APP
-========================= */
+let db;
 
-document.addEventListener("DOMContentLoaded", function () {
+/* =========================================================
+   DATABASE
+   ========================================================= */
 
-    const productPhoto = document.getElementById("productPhoto");
-    const saleCamera = document.getElementById("saleCamera");
+function openDB() {
+  return new Promise((resolve, reject) => {
 
-    // Product photo
-    if (productPhoto) {
-        productPhoto.addEventListener("change", function (e) {
-            previewPhoto(e);
-        });
-    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    // Sale camera
-    if (saleCamera) {
-        saleCamera.addEventListener("change", function (e) {
-            handleSalePhoto(e);
-        });
-    }
+    request.onupgradeneeded = function (event) {
 
-    showSales();
+      const database = event.target.result;
 
-});
+      if (!database.objectStoreNames.contains(STORE_NAME)) {
 
-
-/* =========================
-   STORAGE
-========================= */
-
-function getProducts() {
-    try {
-        return JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || [];
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-}
-
-
-function saveProducts(products) {
-    try {
-        localStorage.setItem(
-            PRODUCTS_KEY,
-            JSON.stringify(products)
+        const store = database.createObjectStore(
+          STORE_NAME,
+          { keyPath: "barcode" }
         );
 
-        return true;
+        store.createIndex("name", "name", { unique: false });
+      }
+    };
 
-    } catch (error) {
+    request.onsuccess = function () {
+      db = request.result;
+      resolve(db);
+    };
 
-        console.error("Storage Error:", error);
-
-        alert(
-            "❌ Product save نہیں ہو سکا۔\n\n" +
-            "Browser storage کا مسئلہ ہے۔"
-        );
-
-        return false;
-    }
+    request.onerror = function () {
+      reject(request.error);
+    };
+  });
 }
 
 
-function getSales() {
-    try {
-        return JSON.parse(localStorage.getItem(SALES_KEY)) || [];
-    } catch (error) {
-        return [];
-    }
-}
+/* =========================================================
+   GET ALL PRODUCTS
+   ========================================================= */
 
+function getAllProducts() {
 
-function saveSales(sales) {
-    localStorage.setItem(
-        SALES_KEY,
-        JSON.stringify(sales)
+  return new Promise((resolve, reject) => {
+
+    const transaction = db.transaction(
+      STORE_NAME,
+      "readonly"
     );
+
+    const store = transaction.objectStore(STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      resolve(request.result || []);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
 }
 
 
-/* =========================
-   PRODUCT PHOTO PREVIEW
-========================= */
+/* =========================================================
+   GET ONE PRODUCT
+   ========================================================= */
 
-function previewPhoto(event) {
+function getProduct(barcode) {
 
-    const file = event.target.files &&
-                 event.target.files[0];
+  return new Promise((resolve, reject) => {
 
-    if (!file) return;
+    const transaction = db.transaction(
+      STORE_NAME,
+      "readonly"
+    );
 
-    if (!file.type.startsWith("image/")) {
+    const store = transaction.objectStore(STORE_NAME);
 
-        alert("❌ صرف تصویر منتخب کریں");
+    const request = store.get(barcode);
 
-        event.target.value = "";
-        return;
+    request.onsuccess = () => {
+      resolve(request.result || null);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+
+
+/* =========================================================
+   SAVE PRODUCT
+   ========================================================= */
+
+function putProduct(product) {
+
+  return new Promise((resolve, reject) => {
+
+    const transaction = db.transaction(
+      STORE_NAME,
+      "readwrite"
+    );
+
+    const store = transaction.objectStore(STORE_NAME);
+
+    const request = store.put(product);
+
+    request.onsuccess = () => {
+      resolve(true);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+
+
+/* =========================================================
+   IMAGE TO DATA URL
+   ========================================================= */
+
+function imageToDataURL(file) {
+
+  return new Promise((resolve, reject) => {
+
+    if (!file) {
+      resolve("");
+      return;
     }
-
-    compressImage(file, function (imageData) {
-
-        const preview =
-            document.getElementById("photoPreview");
-
-        if (preview) {
-
-            preview.src = imageData;
-
-            preview.style.display = "block";
-
-            preview.dataset.image = imageData;
-        }
-
-    });
-}
-
-
-/* =========================
-   IMAGE COMPRESS
-========================= */
-
-function compressImage(file, callback) {
 
     const reader = new FileReader();
 
-    reader.onload = function (event) {
-
-        const img = new Image();
-
-        img.onload = function () {
-
-            const maxWidth = 700;
-
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-
-                const ratio = maxWidth / width;
-
-                width = maxWidth;
-                height = height * ratio;
-            }
-
-            const canvas =
-                document.createElement("canvas");
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx =
-                canvas.getContext("2d");
-
-            ctx.drawImage(
-                img,
-                0,
-                0,
-                width,
-                height
-            );
-
-            const compressed =
-                canvas.toDataURL(
-                    "image/jpeg",
-                    0.65
-                );
-
-            callback(compressed);
-        };
-
-        img.onerror = function () {
-
-            alert("❌ تصویر پڑھنے میں مسئلہ آیا");
-        };
-
-        img.src = event.target.result;
+    reader.onload = function () {
+      resolve(reader.result);
     };
 
     reader.onerror = function () {
-
-        alert("❌ تصویر اپلوڈ نہیں ہو سکی");
+      reject(reader.error);
     };
 
     reader.readAsDataURL(file);
+  });
 }
 
 
-/* =========================
-   SAVE PRODUCT
-========================= */
+/* =========================================================
+   PHOTO PREVIEW
+   ========================================================= */
 
-function saveProduct() {
+function setupPhotoPreview() {
 
-    const barcode =
-        document.getElementById("newBarcode")
-        ?.value.trim() || "";
+  const photoInput =
+    document.getElementById("productPhoto");
 
-    const name =
-        document.getElementById("newName")
-        ?.value.trim() || "";
+  const preview =
+    document.getElementById("photoPreview");
 
-    const cost =
-        Number(
-            document.getElementById("newCost")
-            ?.value
-        ) || 0;
+  if (!photoInput) return;
 
-    const price =
-        Number(
-            document.getElementById("newPrice")
-            ?.value
-        ) || 0;
+  photoInput.addEventListener("change", function () {
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+
+    if (preview) {
+
+      preview.src = url;
+      preview.style.display = "block";
+    }
+  });
+}
+
+
+/* =========================================================
+   GENERATE PRODUCT CODE
+   ========================================================= */
+
+function generateProductCode() {
+
+  return "P" +
+    Date.now().toString() +
+    Math.floor(Math.random() * 1000);
+}
+
+
+/* =========================================================
+   SAVE NEW PRODUCT
+   ========================================================= */
+
+async function saveProduct() {
+
+  try {
+
+    const nameInput =
+      document.getElementById("newName");
+
+    const barcodeInput =
+      document.getElementById("newBarcode");
+
+    const costInput =
+      document.getElementById("newCost");
+
+    const priceInput =
+      document.getElementById("newPrice");
 
     const photoInput =
-        document.getElementById("productPhoto");
+      document.getElementById("productPhoto");
 
-    const preview =
-        document.getElementById("photoPreview");
+    let barcode =
+      barcodeInput ? barcodeInput.value.trim() : "";
+
+    const name =
+      nameInput ? nameInput.value.trim() : "";
+
+    const cost =
+      Number(costInput ? costInput.value : 0);
+
+    const price =
+      Number(priceInput ? priceInput.value : 0);
+
+    const file =
+      photoInput && photoInput.files
+        ? photoInput.files[0]
+        : null;
 
 
-    /* Name required */
+    /* Barcode optional */
+
+    if (!barcode) {
+      barcode = generateProductCode();
+
+      if (barcodeInput) {
+        barcodeInput.value = barcode;
+      }
+    }
+
 
     if (!name) {
 
-        alert("❌ Product Name لکھیں");
-        return;
+      alert("❌ Product کا نام لکھیں۔");
+      return;
     }
 
 
-    /* Price required */
+    if (!price || price <= 0) {
 
-    if (!price) {
-
-        alert("❌ Sale Price لکھیں");
-        return;
+      alert("❌ Sale Price لکھیں۔");
+      return;
     }
 
 
-    /* Get photo */
+    /* Convert image */
 
-    let photo = "";
+    let image = "";
 
-    if (
-        preview &&
-        preview.dataset &&
-        preview.dataset.image
-    ) {
-
-        photo = preview.dataset.image;
-
-    } else if (
-        photoInput &&
-        photoInput.files &&
-        photoInput.files[0]
-    ) {
-
-        compressImage(
-            photoInput.files[0],
-            function (imageData) {
-
-                saveProductFinal(
-                    barcode,
-                    name,
-                    cost,
-                    price,
-                    imageData
-                );
-            }
-        );
-
-        return;
+    if (file) {
+      image = await imageToDataURL(file);
     }
-
-
-    saveProductFinal(
-        barcode,
-        name,
-        cost,
-        price,
-        photo
-    );
-}
-
-
-/* =========================
-   FINAL PRODUCT SAVE
-========================= */
-
-function saveProductFinal(
-    barcode,
-    name,
-    cost,
-    price,
-    photo
-) {
-
-    const products = getProducts();
 
 
     const product = {
 
-        id: Date.now(),
+      barcode: barcode,
 
-        barcode: barcode,
+      name: name,
 
-        name: name,
+      cost: cost,
 
-        cost: cost,
+      price: price,
 
-        price: price,
+      image: image,
 
-        photo: photo,
-
-        createdAt:
-            new Date().toISOString()
+      createdAt: Date.now()
     };
 
 
-    products.push(product);
+    /* SAVE */
+
+    await putProduct(product);
 
 
-    if (!saveProducts(products)) {
-        return;
-    }
+    alert(
+      "✅ Product کامیابی سے Save ہوگیا۔\n\n" +
+      "Product: " + name + "\n" +
+      "Code: " + barcode
+    );
 
 
-    alert("✅ Product کامیابی سے Save ہو گیا");
+    /* Clear fields */
 
-
-    /* Clear form */
-
-    const ids = [
-        "newBarcode",
-        "newName",
-        "newCost",
-        "newPrice"
-    ];
-
-    ids.forEach(function (id) {
-
-        const element =
-            document.getElementById(id);
-
-        if (element) {
-            element.value = "";
-        }
-    });
-
-
-    const photoInput =
-        document.getElementById("productPhoto");
+    if (nameInput) nameInput.value = "";
+    if (costInput) costInput.value = "";
+    if (priceInput) priceInput.value = "";
 
     if (photoInput) {
-        photoInput.value = "";
+      photoInput.value = "";
     }
-
 
     const preview =
-        document.getElementById("photoPreview");
+      document.getElementById("photoPreview");
 
     if (preview) {
-
-        preview.src = "";
-
-        preview.style.display = "none";
-
-        preview.dataset.image = "";
+      preview.src = "";
+      preview.style.display = "none";
     }
+
+    loadProducts();
+
+
+  } catch (error) {
+
+    console.error("SAVE PRODUCT ERROR:", error);
+
+    alert(
+      "❌ Product Save نہیں ہوا۔\n\n" +
+      "Error: " +
+      (error.message || error)
+    );
+  }
 }
 
 
-/* =========================
+/* =========================================================
    SEARCH PRODUCT
-========================= */
+   ========================================================= */
 
-function searchProduct() {
+async function searchProduct() {
+
+  try {
+
+    const barcodeInput =
+      document.getElementById("barcode");
 
     const barcode =
-        document.getElementById("barcode")
-        ?.value.trim() || "";
+      barcodeInput
+        ? barcodeInput.value.trim()
+        : "";
 
 
     if (!barcode) {
 
-        alert(
-            "❌ Barcode لکھیں یا 📷 کیمرے سے Barcode scan کریں"
-        );
+      alert(
+        "📷 اگر Barcode نہیں ہے تو Product کی تصویر استعمال کریں۔"
+      );
 
-        return;
+      return;
     }
 
 
-    findProductByBarcode(barcode);
-}
-
-
-/* =========================
-   FIND PRODUCT
-========================= */
-
-function findProductByBarcode(barcode) {
-
-    const products = getProducts();
-
-
     const product =
-        products.find(function (item) {
-
-            return String(item.barcode)
-                .trim()
-                .toLowerCase() ===
-                String(barcode)
-                .trim()
-                .toLowerCase();
-
-        });
+      await getProduct(barcode);
 
 
     if (!product) {
 
-        alert(
-            "❌ یہ Product محفوظ نہیں ہے"
-        );
+      alert(
+        "❌ یہ Product نہیں ملا۔\n\n" +
+        "Code: " + barcode
+      );
 
-        return;
+      return;
     }
 
 
     fillSaleProduct(product);
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "❌ Search میں مسئلہ آیا۔"
+    );
+  }
 }
 
 
-/* =========================
-   FILL SALE PRODUCT
-========================= */
+/* =========================================================
+   PUT PRODUCT DATA INTO SALE
+   ========================================================= */
 
 function fillSaleProduct(product) {
 
-    const barcode =
-        document.getElementById("barcode");
+  const name =
+    document.getElementById("productName");
 
-    const name =
-        document.getElementById("productName");
+  const purchase =
+    document.getElementById("purchasePrice");
 
-    const purchase =
-        document.getElementById("purchasePrice");
-
-    const sale =
-        document.getElementById("salePrice");
+  const sale =
+    document.getElementById("salePrice");
 
 
-    if (barcode)
-        barcode.value = product.barcode || "";
+  if (name)
+    name.value = product.name || "";
 
-    if (name)
-        name.value = product.name || "";
+  if (purchase)
+    purchase.value = product.cost || 0;
 
-    if (purchase)
-        purchase.value = product.cost || 0;
-
-    if (sale)
-        sale.value = product.price || 0;
+  if (sale)
+    sale.value = product.price || 0;
 
 
-    alert(
-        "✅ Product مل گیا: " +
-        product.name
-    );
+  alert(
+    "✅ Product مل گیا:\n\n" +
+    product.name +
+    "\nSale Price: Rs " +
+    product.price
+  );
 }
 
 
-/* =========================
+/* =========================================================
    SALE CAMERA
-========================= */
+   ========================================================= */
 
-function handleSalePhoto(event) {
+function setupSaleCamera() {
 
-    const file =
-        event.target.files &&
-        event.target.files[0];
+  const camera =
+    document.getElementById("saleCamera");
+
+  if (!camera) return;
+
+
+  camera.addEventListener("change", async function () {
+
+    const file = this.files[0];
 
     if (!file) return;
 
 
     /*
-       پہلے تصویر کو دیکھیں
+      ابھی تصویر کو product search کے لیے استعمال
+      کرنے کے لیے saved product images سے matching
+      کی جا سکتی ہے۔
     */
 
-    compressImage(
-        file,
-        function (imageData) {
+    try {
 
-            /*
-               اگر browser BarcodeDetector
-               support کرتا ہے تو barcode
-               تصویر سے پڑھنے کی کوشش کریں۔
-            */
-
-            scanBarcodeFromImage(
-                file,
-                imageData
-            );
-        }
-    );
-}
+      const products =
+        await getAllProducts();
 
 
-/* =========================
-   BARCODE FROM CAMERA IMAGE
-========================= */
+      if (!products.length) {
 
-async function scanBarcodeFromImage(
-    file,
-    imageData
-) {
+        alert(
+          "❌ پہلے کم از کم ایک Product تصویر کے ساتھ Save کریں۔"
+        );
 
-    if ("BarcodeDetector" in window) {
-
-        try {
-
-            const detector =
-                new BarcodeDetector({
-                    formats: [
-                        "ean_13",
-                        "ean_8",
-                        "code_128",
-                        "code_39",
-                        "upc_a",
-                        "upc_e"
-                    ]
-                });
+        return;
+      }
 
 
-            const bitmap =
-                await createImageBitmap(file);
+      alert(
+        "📷 تصویر مل گئی۔\n\n" +
+        "Image-based automatic recognition کے لیے AI/vision API چاہیے۔\n" +
+        "Barcode search الگ سے کام کرتا ہے۔"
+      );
 
 
-            const codes =
-                await detector.detect(bitmap);
+    } catch (error) {
 
+      console.error(error);
 
-            if (codes.length > 0) {
-
-                const code =
-                    codes[0].rawValue;
-
-
-                const barcode =
-                    document.getElementById(
-                        "barcode"
-                    );
-
-
-                if (barcode) {
-                    barcode.value = code;
-                }
-
-
-                findProductByBarcode(code);
-
-                return;
-            }
-
-        } catch (error) {
-
-            console.log(
-                "Barcode scan failed:",
-                error
-            );
-        }
+      alert(
+        "❌ تصویر process نہیں ہو سکی۔"
+      );
     }
 
-
-    /*
-       Barcode نہ ملے
-    */
-
-    alert(
-        "📷 تصویر لے لی گئی ہے۔\n\n" +
-        "اگر Product کے barcode کو تصویر میں دکھایا گیا تھا " +
-        "تو اسے scan کرنے کی کوشش کی گئی۔\n\n" +
-        "اگر barcode موجود نہیں ہے تو Product کی قیمت " +
-        "معلوم کرنے کے لیے AI/Product database ضروری ہوگا۔"
-    );
+  });
 }
 
 
-/* =========================
+/* =========================================================
    SAVE SALE
-========================= */
+   ========================================================= */
 
 function saveSale() {
 
-    const barcode =
-        document.getElementById("barcode")
-        ?.value.trim() || "";
+  const name =
+    document.getElementById("productName")?.value.trim();
 
-    const name =
-        document.getElementById("productName")
-        ?.value.trim() || "";
+  const purchase =
+    Number(
+      document.getElementById("purchasePrice")?.value || 0
+    );
 
-    const purchase =
-        Number(
-            document.getElementById(
-                "purchasePrice"
-            )?.value
-        ) || 0;
+  const sale =
+    Number(
+      document.getElementById("salePrice")?.value || 0
+    );
 
-    const salePrice =
-        Number(
-            document.getElementById(
-                "salePrice"
-            )?.value
-        ) || 0;
-
-    const quantity =
-        Number(
-            document.getElementById(
-                "quantity"
-            )?.value
-        ) || 1;
-
-
-    if (!name) {
-
-        alert(
-            "❌ پہلے Product تلاش کریں"
-        );
-
-        return;
-    }
-
-
-    if (!salePrice) {
-
-        alert(
-            "❌ Sale Price لکھیں"
-        );
-
-        return;
-    }
-
-
-    const totalSale =
-        salePrice * quantity;
-
-
-    const totalCost =
-        purchase * quantity;
-
-
-    const profit =
-        totalSale - totalCost;
-
-
-    const sales =
-        getSales();
-
-
-    sales.push({
-
-        id: Date.now(),
-
-        barcode: barcode,
-
-        name: name,
-
-        purchasePrice: purchase,
-
-        salePrice: salePrice,
-
-        quantity: quantity,
-
-        totalSale: totalSale,
-
-        profit: profit,
-
-        time:
-            new Date().toLocaleTimeString()
-    });
-
-
-    saveSales(sales);
-
-
-    alert(
-        "✅ Sale کامیابی سے Save ہو گئی"
+  const quantity =
+    Number(
+      document.getElementById("quantity")?.value || 1
     );
 
 
-    showSales();
+  if (!name) {
+
+    alert("❌ پہلے Product تلاش کریں۔");
+    return;
+  }
+
+
+  if (!sale || sale <= 0) {
+
+    alert("❌ Sale Price درست لکھیں۔");
+    return;
+  }
+
+
+  if (!quantity || quantity <= 0) {
+
+    alert("❌ Quantity درست لکھیں۔");
+    return;
+  }
+
+
+  const sales =
+    JSON.parse(
+      localStorage.getItem("sales") || "[]"
+    );
+
+
+  const profit =
+    (sale - purchase) * quantity;
+
+
+  sales.push({
+
+    name: name,
+
+    purchase: purchase,
+
+    sale: sale,
+
+    quantity: quantity,
+
+    profit: profit,
+
+    time: new Date().toLocaleTimeString()
+  });
+
+
+  localStorage.setItem(
+    "sales",
+    JSON.stringify(sales)
+  );
+
+
+  alert("✅ Sale Save ہوگئی۔");
+
+
+  document.getElementById("barcode").value = "";
+  document.getElementById("productName").value = "";
+  document.getElementById("purchasePrice").value = "";
+  document.getElementById("salePrice").value = "";
+  document.getElementById("quantity").value = "1";
+
+
+  showSales();
 }
 
 
-/* =========================
+/* =========================================================
    SHOW SALES
-========================= */
+   ========================================================= */
 
 function showSales() {
 
-    const list =
-        document.getElementById(
-            "salesList"
-        );
+  const container =
+    document.getElementById("salesList");
+
+  if (!container) return;
 
 
-    if (!list) return;
+  const sales =
+    JSON.parse(
+      localStorage.getItem("sales") || "[]"
+    );
 
 
-    const sales =
-        getSales();
+  if (!sales.length) {
+
+    container.innerHTML =
+      "ابھی کوئی آج کی Sale نہیں۔";
+
+    return;
+  }
 
 
-    if (sales.length === 0) {
+  container.innerHTML = sales
+    .map(function (item) {
 
-        list.innerHTML =
-            "ابھی کوئی آج کی Sale نہیں۔";
+      return `
+        <div class="sale-item">
 
-        return;
-    }
+          <b>${escapeHTML(item.name)}</b>
+          × ${item.quantity}
 
+          <br>
 
-    /*
-       صرف آج کی Sales
-    */
+          Sale:
+          Rs ${Number(item.sale).toLocaleString()}
 
-    const today =
-        new Date()
-        .toISOString()
-        .slice(0, 10);
+          <br>
 
+          Profit:
+          Rs ${Number(item.profit).toLocaleString()}
 
-    const todaySales =
-        sales.filter(function (item) {
+          <br>
 
-            if (!item.time) return true;
+          ${escapeHTML(item.time || "")}
 
-            /*
-               پرانے data کو بھی دکھائیں
-            */
+        </div>
+      `;
 
-            return true;
-        });
-
-
-    if (todaySales.length === 0) {
-
-        list.innerHTML =
-            "ابھی کوئی آج کی Sale نہیں۔";
-
-        return;
-    }
-
-
-    list.innerHTML =
-        todaySales
-        .slice()
-        .reverse()
-        .map(function (item) {
-
-            return `
-                <div class="sale-item">
-
-                    <b>
-                        ${escapeHTML(item.name)}
-                        × ${item.quantity}
-                    </b>
-
-                    <br>
-
-                    Sale:
-                    Rs ${Number(
-                        item.totalSale || 0
-                    ).toLocaleString()}
-
-                    <br>
-
-                    Profit:
-                    Rs ${Number(
-                        item.profit || 0
-                    ).toLocaleString()}
-
-                    <br>
-
-                    ${item.time || ""}
-
-                </div>
-            `;
-
-        })
-        .join("");
+    })
+    .join("");
 }
 
 
-/* =========================
+/* =========================================================
+   PRODUCT LIST
+   ========================================================= */
+
+async function loadProducts() {
+
+  try {
+
+    const products =
+      await getAllProducts();
+
+    console.log(
+      "Saved Products:",
+      products
+    );
+
+  } catch (error) {
+
+    console.error(error);
+  }
+}
+
+
+/* =========================================================
    SECURITY
-========================= */
+   ========================================================= */
 
 function escapeHTML(text) {
 
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
+
+
+/* =========================================================
+   START APP
+   ========================================================= */
+
+async function startApp() {
+
+  try {
+
+    await openDB();
+
+    setupPhotoPreview();
+
+    setupSaleCamera();
+
+    showSales();
+
+    loadProducts();
+
+    console.log(
+      "✅ Product Sale App Started"
+    );
+
+  } catch (error) {
+
+    console.error(
+      "DATABASE ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Database start نہیں ہو سکا۔ Browser refresh کریں۔"
+    );
+  }
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  startApp
+);
