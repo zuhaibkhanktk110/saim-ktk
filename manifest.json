@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Saim Ktk Cosmetics",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Saim ktk",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "description": "Saim Ktk Cosmetics Sales System"
+}
