@@ -1,235 +1,244 @@
 <!DOCTYPE html>
-<html lang="ur">
+<html lang="ur" dir="rtl">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
 
-  <title>SAIM KTK - Product Sale</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <link rel="stylesheet" href="style.css">
+    <title>Product Sale</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
 
 <body>
 
 <header>
-  <h1>🛒 Product Sale</h1>
+    <h1>🛒 Product Sale</h1>
 </header>
 
 
 <main>
 
-  <!-- =========================================
-       SALE SECTION
-  ========================================== -->
+    <!-- ============================= -->
+    <!-- NEW SALE -->
+    <!-- ============================= -->
 
-  <section class="card">
+    <section class="card">
 
-    <h2>نئی Sale</h2>
+        <h2>نئی Sale</h2>
 
-    <div class="barcode-row">
+        <div class="barcode-row">
 
-      <input
-        id="barcode"
-        type="text"
-        placeholder="Barcode / Product Code"
-      >
+            <input
+                id="barcode"
+                placeholder="Barcode / Product Code"
+            >
 
-      <button
-        type="button"
-        class="camera-btn"
-        onclick="document.getElementById('barcode').focus()"
-      >
-        📷
-      </button>
+            <button
+                type="button"
+                onclick="openSaleCamera()"
+                class="camera-btn"
+            >
+                📷
+            </button>
 
-    </div>
+        </div>
 
 
-    <button
-      type="button"
-      onclick="searchProduct()"
-      class="main-btn"
-    >
-      Product تلاش کریں
-    </button>
+        <!-- Sale Camera -->
 
+        <input
+            id="saleCamera"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onchange="salePhotoTaken(event)"
+        >
 
-    <input
-      id="productName"
-      type="text"
-      placeholder="Product Name"
-    >
 
+        <!-- Sale Photo -->
 
-    <div class="row">
+        <img
+            id="salePhotoPreview"
+            class="photo-preview"
+            style="display:none;"
+        >
 
-      <input
-        id="purchasePrice"
-        type="number"
-        placeholder="Purchase Price"
-      >
 
-      <input
-        id="salePrice"
-        type="number"
-        placeholder="Sale Price"
-      >
+        <button
+            type="button"
+            onclick="searchProduct()"
+            class="main-btn"
+        >
+            Product تلاش کریں
+        </button>
 
-    </div>
 
+        <input
+            id="productName"
+            placeholder="Product Name"
+        >
 
-    <input
-      id="quantity"
-      type="number"
-      min="1"
-      value="1"
-      placeholder="Quantity"
-    >
 
+        <div class="row">
 
-    <button
-      type="button"
-      onclick="saveSale()"
-      class="main-btn"
-    >
-      Sale Save کریں
-    </button>
+            <input
+                id="purchasePrice"
+                type="number"
+                placeholder="Purchase Price"
+            >
 
-  </section>
+            <input
+                id="salePrice"
+                type="number"
+                placeholder="Sale Price"
+            >
 
+        </div>
 
 
-  <!-- =========================================
-       NEW PRODUCT SECTION
-  ========================================== -->
+        <input
+            id="quantity"
+            type="number"
+            min="1"
+            value="1"
+            placeholder="Quantity"
+        >
 
-  <section class="card">
 
-    <h2>نیا Product محفوظ کریں</h2>
+        <button
+            type="button"
+            onclick="saveSale()"
+            class="main-btn"
+        >
+            Sale Save کریں
+        </button>
 
+    </section>
 
-    <p class="hint">
-      Product کا barcode، نام، prices اور تصویر save کریں۔
-    </p>
 
 
-    <!-- BARCODE -->
+    <!-- ============================= -->
+    <!-- NEW PRODUCT -->
+    <!-- ============================= -->
 
-    <div class="barcode-row">
+    <section class="card">
 
-      <input
-        id="newBarcode"
-        type="text"
-        placeholder="Barcode / Product Code"
-      >
+        <h2>نیا Product محفوظ کریں</h2>
 
-      <label
-        for="productPhoto"
-        class="camera-btn"
-      >
-        📷
-      </label>
+        <p class="hint">
+            Product کا نام، prices اور تصویر محفوظ کریں۔
+        </p>
 
-    </div>
 
+        <div class="barcode-row">
 
-    <!-- PRODUCT NAME -->
+            <input
+                id="newBarcode"
+                placeholder="Barcode / Product Code"
+            >
 
-    <input
-      id="newName"
-      type="text"
-      placeholder="Product Name"
-    >
+            <button
+                type="button"
+                onclick="openProductCamera()"
+                class="camera-btn"
+            >
+                📷
+            </button>
 
+        </div>
 
-    <!-- PRICES -->
 
-    <div class="row">
+        <input
+            id="newName"
+            placeholder="Product Name"
+        >
 
-      <input
-        id="newCost"
-        type="number"
-        placeholder="Purchase Price"
-      >
 
-      <input
-        id="newPrice"
-        type="number"
-        placeholder="Sale Price"
-      >
+        <div class="row">
 
-    </div>
+            <input
+                id="newCost"
+                type="number"
+                placeholder="Purchase Price"
+            >
 
+            <input
+                id="newPrice"
+                type="number"
+                placeholder="Sale Price"
+            >
 
+        </div>
 
-    <!-- =========================================
-         CAMERA / PHOTO INPUT
-    ========================================== -->
 
-    <input
-      id="productPhoto"
-      type="file"
-      accept="image/*"
-      capture="environment"
-      style="display:none;"
-    >
+        <!-- Product Camera -->
 
+        <input
+            id="productPhoto"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onchange="previewPhoto(event)"
+        >
 
-    <!-- CAMERA BUTTON -->
 
-    <label
-      for="productPhoto"
-      class="photo-btn"
-    >
-      📷 Product کی تصویر لیں
-    </label>
+        <button
+            type="button"
+            onclick="openProductCamera()"
+            class="photo-btn"
+        >
+            📷 Product کی تصویر لیں
+        </button>
 
 
-    <!-- PHOTO PREVIEW -->
+        <img
+            id="photoPreview"
+            class="photo-preview"
+            style="display:none;"
+        >
 
-    <img
-      id="photoPreview"
-      class="photo-preview"
-      style="display:none;"
-      alt="Product Photo"
-    >
 
+        <button
+            type="button"
+            onclick="saveProduct()"
+            class="main-btn"
+        >
+            Product Save کریں
+        </button>
 
-    <!-- SAVE PRODUCT -->
+    </section>
 
-    <button
-      type="button"
-      onclick="saveProduct()"
-      class="main-btn"
-    >
-      Product Save کریں
-    </button>
 
-  </section>
 
+    <!-- ============================= -->
+    <!-- TODAY SALES -->
+    <!-- ============================= -->
 
+    <section class="card">
 
-  <!-- =========================================
-       TODAY SALES
-  ========================================== -->
+        <h2>آج کی Sales</h2>
 
-  <section class="card">
+        <div id="salesList">
+            ابھی کوئی آج کی Sale نہیں۔
+        </div>
 
-    <h2>آج کی Sales</h2>
-
-    <div id="salesList"></div>
-
-  </section>
-
+    </section>
 
 </main>
 
 
-<!-- =========================================
-     JAVASCRIPT
-========================================== -->
-
 <script src="app.js"></script>
 
 </body>
+
 </html>
