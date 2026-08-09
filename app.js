@@ -786,5 +786,38 @@ function render() {
 // ==========================================
 // START APP
 // ==========================================
+// ==========================================
+// CAMERA FUNCTIONS
+// ==========================================
 
+function openCamera() {
+    const camera = document.getElementById("productPhoto");
+
+    if (!camera) {
+        alert("Camera input نہیں ملا۔");
+        return;
+    }
+
+    camera.click();
+}
+
+
+function scanProduct() {
+    let camera = document.getElementById("saleCamera");
+
+    if (!camera) {
+        camera = document.createElement("input");
+
+        camera.id = "saleCamera";
+        camera.type = "file";
+        camera.accept = "image/*";
+        camera.setAttribute("capture", "environment");
+
+        camera.style.display = "none";
+
+        document.body.appendChild(camera);
+    }
+
+    camera.click();
+}
 render();
