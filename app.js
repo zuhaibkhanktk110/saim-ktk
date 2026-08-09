@@ -2,7 +2,6 @@
 // SAIM KTK - COMPLETE APP.JS
 // ==========================================
 
-// Load saved data
 let sales = JSON.parse(
     localStorage.getItem("saimKtkSales") || "[]"
 );
@@ -18,6 +17,89 @@ let products = JSON.parse(
 
 function today() {
     return new Date().toISOString().slice(0, 10);
+}
+
+
+// ==========================================
+// OPEN CAMERA FOR PRODUCT PHOTO
+// ==========================================
+
+function openCamera() {
+
+    const cameraInput =
+        document.getElementById("productPhoto");
+
+    if (!cameraInput) {
+        alert("Camera نہیں مل رہا۔");
+        return;
+    }
+
+    cameraInput.click();
+}
+
+
+// ==========================================
+// PHOTO PREVIEW
+// ==========================================
+
+function previewPhoto(event) {
+
+    const file =
+        event.target.files &&
+        event.target.files[0];
+
+    const preview =
+        document.getElementById("photoPreview");
+
+    if (!file) {
+
+        if (preview) {
+            preview.src = "";
+            preview.style.display = "none";
+        }
+
+        return;
+    }
+
+    const reader =
+        new FileReader();
+
+    reader.onload = function(e) {
+
+        if (preview) {
+
+            preview.src =
+                e.target.result;
+
+            preview.style.display =
+                "block";
+        }
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+// ==========================================
+// BARCODE CAMERA
+// ==========================================
+
+function scanProduct() {
+
+    const cameraInput =
+        document.getElementById("barcodeCamera");
+
+    if (cameraInput) {
+
+        cameraInput.click();
+
+    } else {
+
+        alert(
+            "Barcode Camera ابھی setup نہیں ہے۔ پہلے Product کو Save کریں۔"
+        );
+
+    }
 }
 
 
@@ -43,38 +125,67 @@ function searchProduct() {
         return;
     }
 
-    const product = products.find(function (item) {
-        return item.barcode === code;
-    });
+    const product =
+        products.find(function(item) {
+
+            return item.barcode === code;
+
+        });
+
 
     if (!product) {
-        alert("یہ Product محفوظ نہیں ہے۔");
+
+        alert(
+            "یہ Product محفوظ نہیں ہے۔"
+        );
+
         return;
     }
 
-    document.getElementById("productName").value =
+
+    document.getElementById(
+        "productName"
+    ).value =
         product.name || "";
 
-    document.getElementById("purchasePrice").value =
+
+    document.getElementById(
+        "purchasePrice"
+    ).value =
         product.purchasePrice || "";
 
-    document.getElementById("salePrice").value =
+
+    document.getElementById(
+        "salePrice"
+    ).value =
         product.salePrice || "";
 
-    // Show saved product photo
+
+    // Saved photo دکھائیں
+
     const preview =
-        document.getElementById("photoPreview");
+        document.getElementById(
+            "photoPreview"
+        );
+
 
     if (preview) {
 
         if (product.photo) {
-            preview.src = product.photo;
-            preview.style.display = "block";
-        } else {
-            preview.src = "";
-            preview.style.display = "none";
-        }
 
+            preview.src =
+                product.photo;
+
+            preview.style.display =
+                "block";
+
+        } else {
+
+            preview.src = "";
+
+            preview.style.display =
+                "none";
+        }
     }
 }
 
@@ -86,26 +197,39 @@ function searchProduct() {
 function saveProduct() {
 
     const barcode =
-        document.getElementById("newBarcode").value.trim();
+        document.getElementById(
+            "newBarcode"
+        ).value.trim();
+
 
     const name =
-        document.getElementById("newName").value.trim();
+        document.getElementById(
+            "newName"
+        ).value.trim();
+
 
     const purchasePrice =
         Number(
-            document.getElementById("newCost").value
+            document.getElementById(
+                "newCost"
+            ).value
         );
+
 
     const salePrice =
         Number(
-            document.getElementById("newPrice").value
+            document.getElementById(
+                "newPrice"
+            ).value
         );
 
+
     const photoInput =
-        document.getElementById("productPhoto");
+        document.getElementById(
+            "productPhoto"
+        );
 
 
-    // Check information
     if (
         !barcode ||
         !name ||
@@ -121,7 +245,6 @@ function saveProduct() {
     }
 
 
-    // Save product with photo
     function saveData(photoData) {
 
         const product = {
@@ -130,55 +253,67 @@ function saveProduct() {
 
             name: name,
 
-            purchasePrice: purchasePrice,
+            purchasePrice:
+                purchasePrice,
 
-            salePrice: salePrice,
+            salePrice:
+                salePrice,
 
-            photo: photoData || ""
+            photo:
+                photoData || ""
 
         };
 
 
-        // Check if product already exists
         const index =
-            products.findIndex(function (item) {
-                return item.barcode === barcode;
-            });
+            products.findIndex(
+                function(item) {
+
+                    return item.barcode === barcode;
+
+                }
+            );
 
 
         if (index >= 0) {
 
-            products[index] = product;
+            products[index] =
+                product;
 
         } else {
 
-            products.push(product);
+            products.push(
+                product
+            );
 
         }
 
 
-        // Save products
         localStorage.setItem(
             "saimKtkProducts",
             JSON.stringify(products)
         );
 
 
-        alert("Product محفوظ ہو گیا۔");
+        alert(
+            "Product اور تصویر محفوظ ہو گئی۔"
+        );
 
 
-        // Clear form
         document.getElementById(
             "newBarcode"
         ).value = "";
+
 
         document.getElementById(
             "newName"
         ).value = "";
 
+
         document.getElementById(
             "newCost"
         ).value = "";
+
 
         document.getElementById(
             "newPrice"
@@ -186,22 +321,31 @@ function saveProduct() {
 
 
         if (photoInput) {
+
             photoInput.value = "";
+
         }
 
 
         const preview =
-            document.getElementById("photoPreview");
+            document.getElementById(
+                "photoPreview"
+            );
+
 
         if (preview) {
-            preview.src = "";
-            preview.style.display = "none";
-        }
 
+            preview.src = "";
+
+            preview.style.display =
+                "none";
+
+        }
     }
 
 
-    // If photo selected
+    // اگر تصویر لی گئی ہے
+
     if (
         photoInput &&
         photoInput.files &&
@@ -211,28 +355,30 @@ function saveProduct() {
         const file =
             photoInput.files[0];
 
+
         const reader =
             new FileReader();
 
 
-        reader.onload = function (event) {
+        reader.onload =
+            function(e) {
 
-            saveData(
-                event.target.result
-            );
+                saveData(
+                    e.target.result
+                );
 
-        };
+            };
 
 
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(
+            file
+        );
 
     } else {
 
-        // Save without photo
         saveData("");
 
     }
-
 }
 
 
@@ -247,10 +393,12 @@ function saveSale() {
             "barcode"
         ).value.trim();
 
+
     const name =
         document.getElementById(
             "productName"
         ).value.trim();
+
 
     const purchasePrice =
         Number(
@@ -259,12 +407,14 @@ function saveSale() {
             ).value
         );
 
+
     const salePrice =
         Number(
             document.getElementById(
                 "salePrice"
             ).value
         );
+
 
     const quantity =
         Math.max(
@@ -294,164 +444,104 @@ function saveSale() {
     const totalSale =
         salePrice * quantity;
 
+
     const profit =
-        (salePrice - purchasePrice) * quantity;
+        (salePrice - purchasePrice)
+        * quantity;
 
 
-    const sale = {
+    sales.push({
 
-        barcode: barcode,
+        barcode:
+            barcode,
 
-        name: name,
+        name:
+            name,
 
-        purchasePrice: purchasePrice,
+        purchasePrice:
+            purchasePrice,
 
-        salePrice: salePrice,
+        salePrice:
+            salePrice,
 
-        quantity: quantity,
+        quantity:
+            quantity,
 
-        totalSale: totalSale,
+        totalSale:
+            totalSale,
 
-        profit: profit,
+        profit:
+            profit,
 
-        date: today(),
+        date:
+            today(),
 
-        time: new Date().toLocaleTimeString()
+        time:
+            new Date()
+                .toLocaleTimeString()
 
-    };
+    });
 
 
-    sales.push(sale);
-
-
-    // Save sales
     localStorage.setItem(
         "saimKtkSales",
         JSON.stringify(sales)
     );
 
 
-    alert("Sale محفوظ ہو گئی۔");
+    alert(
+        "Sale محفوظ ہو گئی۔"
+    );
 
 
-    // Clear sale form
     document.getElementById(
         "barcode"
     ).value = "";
+
 
     document.getElementById(
         "productName"
     ).value = "";
 
+
     document.getElementById(
         "purchasePrice"
     ).value = "";
 
+
     document.getElementById(
         "salePrice"
     ).value = "";
+
 
     document.getElementById(
         "quantity"
     ).value = 1;
 
 
-    const preview =
-        document.getElementById("photoPreview");
-
-    if (preview) {
-        preview.src = "";
-        preview.style.display = "none";
-    }
-
-
     render();
-
 }
 
 
 // ==========================================
-// PHOTO PREVIEW
-// ==========================================
-
-const photoInput =
-    document.getElementById("productPhoto");
-
-const photoPreview =
-    document.getElementById("photoPreview");
-
-
-if (photoInput) {
-
-    photoInput.addEventListener(
-        "change",
-        function () {
-
-            const file =
-                this.files &&
-                this.files[0];
-
-
-            if (!file) {
-
-                if (photoPreview) {
-
-                    photoPreview.src = "";
-
-                    photoPreview.style.display =
-                        "none";
-
-                }
-
-                return;
-            }
-
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload =
-                function (event) {
-
-                    if (photoPreview) {
-
-                        photoPreview.src =
-                            event.target.result;
-
-                        photoPreview.style.display =
-                            "block";
-
-                    }
-
-                };
-
-
-            reader.readAsDataURL(file);
-
-        }
-    );
-
-}
-
-
-// ==========================================
-// RENDER TODAY SALES
+// RENDER SALES
 // ==========================================
 
 function render() {
 
     const list =
-        sales.filter(function (item) {
+        sales.filter(
+            function(item) {
 
-            return item.date === today();
+                return item.date === today();
 
-        });
+            }
+        );
 
 
     const total =
         list.reduce(
-            function (sum, item) {
+            function(sum, item) {
 
                 return sum +
                     Number(
@@ -465,7 +555,7 @@ function render() {
 
     const profit =
         list.reduce(
-            function (sum, item) {
+            function(sum, item) {
 
                 return sum +
                     Number(
@@ -482,10 +572,12 @@ function render() {
             "totalSales"
         );
 
+
     const totalProfit =
         document.getElementById(
             "totalProfit"
         );
+
 
     const totalOrders =
         document.getElementById(
@@ -543,43 +635,46 @@ function render() {
         list
             .slice()
             .reverse()
-            .map(function (item) {
+            .map(
+                function(item) {
 
-                return `
-                    <div class="sale-item">
+                    return `
 
-                        <b>
-                            ${item.name}
-                        </b>
+                        <div class="sale-item">
 
-                        × ${item.quantity}
+                            <b>
+                                ${item.name}
+                            </b>
 
-                        <br>
+                            × ${item.quantity}
 
-                        Sale:
-                        Rs ${Number(
-                            item.totalSale || 0
-                        ).toLocaleString()}
+                            <br>
 
-                        <br>
-
-                        <b>
-                            Profit:
+                            Sale:
                             Rs ${Number(
-                                item.profit || 0
+                                item.totalSale || 0
                             ).toLocaleString()}
-                        </b>
 
-                        <br>
+                            <br>
 
-                        ${item.time || ""}
+                            <b>
+                                Profit:
+                                Rs ${Number(
+                                    item.profit || 0
+                                ).toLocaleString()}
+                            </b>
 
-                    </div>
-                `;
+                            <br>
 
-            })
+                            ${item.time || ""}
+
+                        </div>
+
+                    `;
+
+                }
+            )
             .join("");
-
 }
 
 
