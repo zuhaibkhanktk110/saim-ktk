@@ -1,15 +1,244 @@
 // ==========================================
 // SAIM KTK - COMPLETE APP.JS
+// Photos -> IndexedDB
+// Products/Sales -> localStorage
 // ==========================================
 
-// LOAD DATA
-let sales = JSON.parse(
-    localStorage.getItem("saimKtkSales") || "[]"
-);
 
-let products = JSON.parse(
-    localStorage.getItem("saimKtkProducts") || "[]"
-);
+// ==========================================
+// LOAD DATA
+// ==========================================
+
+let sales = [];
+
+let products = [];
+
+try {
+    sales = JSON.parse(
+        localStorage.getItem("saimKtkSales") || "[]"
+    );
+} catch (e) {
+    sales = [];
+}
+
+try {
+    products = JSON.parse(
+        localStorage.getItem("saimKtkProducts") || "[]"
+    );
+} catch (e) {
+    products = [];
+}
+
+
+// ==========================================
+// INDEXED DB
+// ==========================================
+
+const DB_NAME = "saimKtkPhotoDB";
+const DB_VERSION = 1;
+const PHOTO_STORE = "photos";
+
+
+function openPhotoDB() {
+
+    return new Promise(function(resolve, reject) {
+
+        const request =
+            indexedDB.open(DB_NAME, DB_VERSION);
+
+
+        request.onupgradeneeded = function(event) {
+
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+
+                db.createObjectStore(
+                    PHOTO_STORE,
+                    { keyPath: "barcode" }
+                );
+
+            }
+        };
+
+
+        request.onsuccess = function() {
+
+            resolve(request.result);
+
+        };
+
+
+        request.onerror = function() {
+
+            reject(request.error);
+
+        };
+
+    });
+
+}
+
+
+// ==========================================
+// SAVE PHOTO IN INDEXED DB
+// ==========================================
+
+function savePhoto(barcode, photoData) {
+
+    return openPhotoDB().then(function(db) {
+
+        return new Promise(function(resolve, reject) {
+
+            const transaction =
+                db.transaction(
+                    PHOTO_STORE,
+                    "readwrite"
+                );
+
+            const store =
+                transaction.objectStore(
+                    PHOTO_STORE
+                );
+
+
+            store.put({
+                barcode: barcode,
+                photo: photoData
+            });
+
+
+            transaction.oncomplete = function() {
+
+                db.close();
+
+                resolve();
+
+            };
+
+
+            transaction.onerror = function() {
+
+                db.close();
+
+                reject(transaction.error);
+
+            };
+
+        });
+
+    });
+
+}
+
+
+// ==========================================
+// GET PHOTO
+// ==========================================
+
+function getPhoto(barcode) {
+
+    return openPhotoDB().then(function(db) {
+
+        return new Promise(function(resolve, reject) {
+
+            const transaction =
+                db.transaction(
+                    PHOTO_STORE,
+                    "readonly"
+                );
+
+            const store =
+                transaction.objectStore(
+                    PHOTO_STORE
+                );
+
+
+            const request =
+                store.get(barcode);
+
+
+            request.onsuccess = function() {
+
+                db.close();
+
+                if (request.result) {
+
+                    resolve(
+                        request.result.photo || ""
+                    );
+
+                } else {
+
+                    resolve("");
+
+                }
+
+            };
+
+
+            request.onerror = function() {
+
+                db.close();
+
+                reject(request.error);
+
+            };
+
+        });
+
+    });
+
+}
+
+
+// ==========================================
+// DELETE PHOTO
+// ==========================================
+
+function deletePhoto(barcode) {
+
+    return openPhotoDB().then(function(db) {
+
+        return new Promise(function(resolve, reject) {
+
+            const transaction =
+                db.transaction(
+                    PHOTO_STORE,
+                    "readwrite"
+                );
+
+            const store =
+                transaction.objectStore(
+                    PHOTO_STORE
+                );
+
+
+            store.delete(barcode);
+
+
+            transaction.oncomplete = function() {
+
+                db.close();
+
+                resolve();
+
+            };
+
+
+            transaction.onerror = function() {
+
+                db.close();
+
+                reject(transaction.error);
+
+            };
+
+        });
+
+    });
+
+}
 
 
 // ==========================================
@@ -17,58 +246,11 @@ let products = JSON.parse(
 // ==========================================
 
 function today() {
-    return new Date().toISOString().slice(0, 10);
-}
 
+    return new Date()
+        .toISOString()
+        .slice(0, 10);
 
-// ==========================================
-// SEARCH PRODUCT
-// ==========================================
-
-function searchProduct() {
-
-    const barcodeInput =
-        document.getElementById("barcode");
-
-    if (!barcodeInput) {
-        alert("Barcode field نہیں ملا۔");
-        return;
-    }
-
-    const code =
-        barcodeInput.value.trim();
-
-    if (!code) {
-        alert("پہلے Barcode / Product Code لکھیں۔");
-        return;
-    }
-
-    const product =
-        products.find(function(item) {
-            return item.barcode === code;
-        });
-
-    if (!product) {
-        alert("یہ Product محفوظ نہیں ہے۔");
-        return;
-    }
-
-    document.getElementById("productName").value =
-        product.name || "";
-
-    document.getElementById("purchasePrice").value =
-        product.purchasePrice || "";
-
-    document.getElementById("salePrice").value =
-        product.salePrice || "";
-
-    const preview =
-        document.getElementById("photoPreview");
-
-    if (preview && product.photo) {
-        preview.src = product.photo;
-        preview.style.display = "block";
-    }
 }
 
 
@@ -80,75 +262,223 @@ function compressPhoto(file) {
 
     return new Promise(function(resolve, reject) {
 
-        const reader = new FileReader();
+        const reader =
+            new FileReader();
+
 
         reader.onload = function(event) {
 
-            const image = new Image();
+            const image =
+                new Image();
+
 
             image.onload = function() {
 
-                const maxWidth = 800;
-                const maxHeight = 800;
+                let width =
+                    image.width;
 
-                let width = image.width;
-                let height = image.height;
+                let height =
+                    image.height;
 
-                if (width > maxWidth) {
+
+                const maxSize = 900;
+
+
+                if (width > maxSize) {
 
                     height =
-                        height * (maxWidth / width);
-
-                    width = maxWidth;
-                }
-
-                if (height > maxHeight) {
+                        height *
+                        (maxSize / width);
 
                     width =
-                        width * (maxHeight / height);
-
-                    height = maxHeight;
+                        maxSize;
                 }
 
-                const canvas =
-                    document.createElement("canvas");
 
-                canvas.width = width;
-                canvas.height = height;
+                if (height > maxSize) {
+
+                    width =
+                        width *
+                        (maxSize / height);
+
+                    height =
+                        maxSize;
+                }
+
+
+                const canvas =
+                    document.createElement(
+                        "canvas"
+                    );
+
+
+                canvas.width =
+                    Math.round(width);
+
+                canvas.height =
+                    Math.round(height);
+
 
                 const ctx =
                     canvas.getContext("2d");
+
 
                 ctx.drawImage(
                     image,
                     0,
                     0,
-                    width,
-                    height
+                    canvas.width,
+                    canvas.height
                 );
 
-                const compressed =
+
+                const result =
                     canvas.toDataURL(
                         "image/jpeg",
                         0.65
                     );
 
-                resolve(compressed);
+
+                resolve(result);
+
             };
+
 
             image.onerror = function() {
-                reject("تصویر load نہیں ہو سکی۔");
+
+                reject(
+                    new Error(
+                        "Image load failed"
+                    )
+                );
+
             };
 
-            image.src = event.target.result;
+
+            image.src =
+                event.target.result;
+
         };
+
 
         reader.onerror = function() {
-            reject("تصویر read نہیں ہو سکی۔");
+
+            reject(
+                new Error(
+                    "File read failed"
+                )
+            );
+
         };
 
+
         reader.readAsDataURL(file);
+
     });
+
+}
+
+
+// ==========================================
+// SEARCH PRODUCT
+// ==========================================
+
+async function searchProduct() {
+
+    const barcodeInput =
+        document.getElementById("barcode");
+
+
+    if (!barcodeInput) {
+
+        alert("Barcode field نہیں ملا۔");
+
+        return;
+    }
+
+
+    const code =
+        barcodeInput.value.trim();
+
+
+    if (!code) {
+
+        alert(
+            "پہلے Barcode / Product Code لکھیں۔"
+        );
+
+        return;
+    }
+
+
+    const product =
+        products.find(function(item) {
+
+            return item.barcode === code;
+
+        });
+
+
+    if (!product) {
+
+        alert(
+            "یہ Product محفوظ نہیں ہے۔"
+        );
+
+        return;
+    }
+
+
+    document.getElementById(
+        "productName"
+    ).value =
+        product.name || "";
+
+
+    document.getElementById(
+        "purchasePrice"
+    ).value =
+        product.purchasePrice || "";
+
+
+    document.getElementById(
+        "salePrice"
+    ).value =
+        product.salePrice || "";
+
+
+    // GET PHOTO FROM INDEXED DB
+
+    try {
+
+        const photo =
+            await getPhoto(code);
+
+
+        const preview =
+            document.getElementById(
+                "photoPreview"
+            );
+
+
+        if (preview && photo) {
+
+            preview.src =
+                photo;
+
+            preview.style.display =
+                "block";
+        }
+
+    } catch (error) {
+
+        console.log(
+            "Photo not found",
+            error
+        );
+
+    }
+
 }
 
 
@@ -159,19 +489,33 @@ function compressPhoto(file) {
 async function saveProduct() {
 
     const barcodeElement =
-        document.getElementById("newBarcode");
+        document.getElementById(
+            "newBarcode"
+        );
+
 
     const nameElement =
-        document.getElementById("newName");
+        document.getElementById(
+            "newName"
+        );
+
 
     const costElement =
-        document.getElementById("newCost");
+        document.getElementById(
+            "newCost"
+        );
+
 
     const priceElement =
-        document.getElementById("newPrice");
+        document.getElementById(
+            "newPrice"
+        );
+
 
     const photoInput =
-        document.getElementById("productPhoto");
+        document.getElementById(
+            "productPhoto"
+        );
 
 
     if (
@@ -181,7 +525,10 @@ async function saveProduct() {
         !priceElement
     ) {
 
-        alert("Product کے fields نہیں مل رہے۔");
+        alert(
+            "Product کے fields نہیں مل رہے۔"
+        );
+
         return;
     }
 
@@ -189,14 +536,21 @@ async function saveProduct() {
     const barcode =
         barcodeElement.value.trim();
 
+
     const name =
         nameElement.value.trim();
 
+
     const purchasePrice =
-        Number(costElement.value);
+        Number(
+            costElement.value
+        );
+
 
     const salePrice =
-        Number(priceElement.value);
+        Number(
+            priceElement.value
+        );
 
 
     // VALIDATION
@@ -216,12 +570,14 @@ async function saveProduct() {
     }
 
 
-    // PHOTO
-
-    let photoData = "";
-
-
     try {
+
+        // ----------------------------------
+        // PHOTO
+        // ----------------------------------
+
+        let photoData = "";
+
 
         if (
             photoInput &&
@@ -232,49 +588,74 @@ async function saveProduct() {
             const file =
                 photoInput.files[0];
 
+
             photoData =
                 await compressPhoto(file);
+
         }
 
 
-        // PRODUCT OBJECT
+        // ----------------------------------
+        // SAVE PHOTO SEPARATELY
+        // ----------------------------------
+
+        if (photoData) {
+
+            await savePhoto(
+                barcode,
+                photoData
+            );
+
+        }
+
+
+        // ----------------------------------
+        // SAVE PRODUCT WITHOUT PHOTO
+        // ----------------------------------
 
         const product = {
 
-            barcode: barcode,
+            barcode:
+                barcode,
 
-            name: name,
+            name:
+                name,
 
-            purchasePrice: purchasePrice,
+            purchasePrice:
+                purchasePrice,
 
-            salePrice: salePrice,
-
-            photo: photoData
+            salePrice:
+                salePrice
         };
 
 
-        // CHECK EXISTING PRODUCT
-
         const index =
-            products.findIndex(function(item) {
+            products.findIndex(
+                function(item) {
 
-                return item.barcode === barcode;
+                    return item.barcode === barcode;
 
-            });
+                }
+            );
 
 
         if (index >= 0) {
 
-            products[index] = product;
+            products[index] =
+                product;
 
         } else {
 
-            products.push(product);
+            products.push(
+                product
+            );
 
         }
 
 
-        // SAVE
+        // ----------------------------------
+        // LOCAL STORAGE ONLY DATA
+        // ----------------------------------
 
         localStorage.setItem(
             "saimKtkProducts",
@@ -282,41 +663,69 @@ async function saveProduct() {
         );
 
 
-        alert("✅ Product کامیابی سے محفوظ ہو گیا۔");
+        // ----------------------------------
+        // SUCCESS
+        // ----------------------------------
+
+        alert(
+            "✅ Product تصویر کے ساتھ محفوظ ہو گیا۔"
+        );
 
 
         // CLEAR FORM
 
-        barcodeElement.value = "";
-        nameElement.value = "";
-        costElement.value = "";
-        priceElement.value = "";
+        barcodeElement.value =
+            "";
+
+        nameElement.value =
+            "";
+
+        costElement.value =
+            "";
+
+        priceElement.value =
+            "";
 
 
         if (photoInput) {
-            photoInput.value = "";
+
+            photoInput.value =
+                "";
+
         }
 
 
         const preview =
-            document.getElementById("photoPreview");
+            document.getElementById(
+                "photoPreview"
+            );
+
 
         if (preview) {
 
-            preview.src = "";
+            preview.src =
+                "";
 
-            preview.style.display = "none";
+            preview.style.display =
+                "none";
+
         }
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "SAVE PRODUCT ERROR:",
+            error
+        );
+
 
         alert(
-            "❌ Product save نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔"
+            "❌ Product save نہیں ہو سکا۔ دوبارہ کوشش کریں۔"
         );
+
     }
+
 }
 
 
@@ -327,26 +736,40 @@ async function saveProduct() {
 function saveSale() {
 
     const barcode =
-        document.getElementById("barcode").value.trim();
+        document.getElementById(
+            "barcode"
+        ).value.trim();
+
 
     const name =
-        document.getElementById("productName").value.trim();
+        document.getElementById(
+            "productName"
+        ).value.trim();
+
 
     const purchasePrice =
         Number(
-            document.getElementById("purchasePrice").value
+            document.getElementById(
+                "purchasePrice"
+            ).value
         );
+
 
     const salePrice =
         Number(
-            document.getElementById("salePrice").value
+            document.getElementById(
+                "salePrice"
+            ).value
         );
+
 
     const quantity =
         Math.max(
             1,
             Number(
-                document.getElementById("quantity").value
+                document.getElementById(
+                    "quantity"
+                ).value
             ) || 1
         );
 
@@ -357,7 +780,9 @@ function saveSale() {
         salePrice <= 0
     ) {
 
-        alert("Product اور prices مکمل کریں۔");
+        alert(
+            "Product اور prices مکمل کریں۔"
+        );
 
         return;
     }
@@ -365,31 +790,40 @@ function saveSale() {
 
     const sale = {
 
-        barcode: barcode,
+        barcode:
+            barcode,
 
-        name: name,
+        name:
+            name,
 
-        purchasePrice: purchasePrice,
+        purchasePrice:
+            purchasePrice,
 
-        salePrice: salePrice,
+        salePrice:
+            salePrice,
 
-        quantity: quantity,
+        quantity:
+            quantity,
 
         totalSale:
             salePrice * quantity,
 
         profit:
-            (salePrice - purchasePrice) * quantity,
+            (salePrice - purchasePrice) *
+            quantity,
 
         date:
             today(),
 
         time:
-            new Date().toLocaleTimeString()
+            new Date()
+                .toLocaleTimeString()
     };
 
 
-    sales.push(sale);
+    sales.push(
+        sale
+    );
 
 
     localStorage.setItem(
@@ -398,21 +832,38 @@ function saveSale() {
     );
 
 
-    alert("✅ Sale محفوظ ہو گئی۔");
+    alert(
+        "✅ Sale محفوظ ہو گئی۔"
+    );
 
 
-    document.getElementById("barcode").value = "";
+    document.getElementById(
+        "barcode"
+    ).value = "";
 
-    document.getElementById("productName").value = "";
 
-    document.getElementById("purchasePrice").value = "";
+    document.getElementById(
+        "productName"
+    ).value = "";
 
-    document.getElementById("salePrice").value = "";
 
-    document.getElementById("quantity").value = 1;
+    document.getElementById(
+        "purchasePrice"
+    ).value = "";
+
+
+    document.getElementById(
+        "salePrice"
+    ).value = "";
+
+
+    document.getElementById(
+        "quantity"
+    ).value = 1;
 
 
     render();
+
 }
 
 
@@ -421,11 +872,15 @@ function saveSale() {
 // ==========================================
 
 const photoInput =
-    document.getElementById("productPhoto");
+    document.getElementById(
+        "productPhoto"
+    );
 
 
 const photoPreview =
-    document.getElementById("photoPreview");
+    document.getElementById(
+        "photoPreview"
+    );
 
 
 if (photoInput) {
@@ -438,8 +893,11 @@ if (photoInput) {
                 this.files &&
                 this.files[0];
 
+
             if (!file) {
+
                 return;
+
             }
 
 
@@ -457,28 +915,92 @@ if (photoInput) {
 
                         photoPreview.style.display =
                             "block";
+
                     }
+
                 };
 
 
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(
+                file
+            );
+
         }
     );
+
 }
 
 
 // ==========================================
-// RENDER SALES
+// CLEAN OLD PHOTO DATA
+// ==========================================
+// پہلے والے version نے photos کو
+// localStorage میں رکھا تھا۔
+// یہ code پرانے photo fields ہٹا دیتا ہے۔
+// ==========================================
+
+try {
+
+    const cleanProducts =
+        products.map(
+            function(item) {
+
+                return {
+
+                    barcode:
+                        item.barcode,
+
+                    name:
+                        item.name,
+
+                    purchasePrice:
+                        item.purchasePrice,
+
+                    salePrice:
+                        item.salePrice
+
+                };
+
+            }
+        );
+
+
+    localStorage.setItem(
+        "saimKtkProducts",
+        JSON.stringify(
+            cleanProducts
+        )
+    );
+
+
+    products =
+        cleanProducts;
+
+
+} catch (error) {
+
+    console.log(
+        "Old product cleanup error",
+        error
+    );
+
+}
+
+
+// ==========================================
+// RENDER TODAY SALES
 // ==========================================
 
 function render() {
 
     const list =
-        sales.filter(function(item) {
+        sales.filter(
+            function(item) {
 
-            return item.date === today();
+                return item.date === today();
 
-        });
+            }
+        );
 
 
     const total =
@@ -486,7 +1008,9 @@ function render() {
             function(sum, item) {
 
                 return sum +
-                    Number(item.totalSale || 0);
+                    Number(
+                        item.totalSale || 0
+                    );
 
             },
             0
@@ -498,7 +1022,9 @@ function render() {
             function(sum, item) {
 
                 return sum +
-                    Number(item.profit || 0);
+                    Number(
+                        item.profit || 0
+                    );
 
             },
             0
@@ -506,26 +1032,38 @@ function render() {
 
 
     const totalSales =
-        document.getElementById("totalSales");
+        document.getElementById(
+            "totalSales"
+        );
+
 
     const totalProfit =
-        document.getElementById("totalProfit");
+        document.getElementById(
+            "totalProfit"
+        );
+
 
     const totalOrders =
-        document.getElementById("totalOrders");
+        document.getElementById(
+            "totalOrders"
+        );
 
 
     if (totalSales) {
 
         totalSales.textContent =
-            "Rs " + total.toLocaleString();
+            "Rs " +
+            total.toLocaleString();
+
     }
 
 
     if (totalProfit) {
 
         totalProfit.textContent =
-            "Rs " + profit.toLocaleString();
+            "Rs " +
+            profit.toLocaleString();
+
     }
 
 
@@ -533,15 +1071,20 @@ function render() {
 
         totalOrders.textContent =
             list.length;
+
     }
 
 
     const salesList =
-        document.getElementById("salesList");
+        document.getElementById(
+            "salesList"
+        );
 
 
     if (!salesList) {
+
         return;
+
     }
 
 
@@ -551,6 +1094,7 @@ function render() {
             "ابھی کوئی آج کی Sale نہیں۔";
 
         return;
+
     }
 
 
@@ -558,40 +1102,45 @@ function render() {
         list
             .slice()
             .reverse()
-            .map(function(item) {
+            .map(
+                function(item) {
 
-                return `
-                    <div class="sale-item">
+                    return `
+                        <div class="sale-item">
 
-                        <b>${item.name}</b>
+                            <b>
+                                ${item.name}
+                            </b>
 
-                        × ${item.quantity}
+                            × ${item.quantity}
 
-                        <br>
+                            <br>
 
-                        Sale:
-                        Rs ${Number(
-                            item.totalSale || 0
-                        ).toLocaleString()}
-
-                        <br>
-
-                        <b>
-                            Profit:
+                            Sale:
                             Rs ${Number(
-                                item.profit || 0
+                                item.totalSale || 0
                             ).toLocaleString()}
-                        </b>
 
-                        <br>
+                            <br>
 
-                        ${item.time || ""}
+                            <b>
+                                Profit:
+                                Rs ${Number(
+                                    item.profit || 0
+                                ).toLocaleString()}
+                            </b>
 
-                    </div>
-                `;
+                            <br>
 
-            })
+                            ${item.time || ""}
+
+                        </div>
+                    `;
+
+                }
+            )
             .join("");
+
 }
 
 
