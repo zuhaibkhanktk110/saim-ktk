@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product Sale</title>
+
+  <title>SAIM KTK - Product Sale</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,85 +15,219 @@
   <h1>🛒 Product Sale</h1>
 </header>
 
+
 <main>
 
-  <!-- SALE -->
+  <!-- =========================================
+       SALE SECTION
+  ========================================== -->
+
   <section class="card">
+
     <h2>نئی Sale</h2>
 
     <div class="barcode-row">
-      <input id="barcode" placeholder="Barcode / Product Code">
-      <button onclick="scanProduct()" class="camera-btn">📷</button>
+
+      <input
+        id="barcode"
+        type="text"
+        placeholder="Barcode / Product Code"
+      >
+
+      <button
+        type="button"
+        class="camera-btn"
+        onclick="document.getElementById('barcode').focus()"
+      >
+        📷
+      </button>
+
     </div>
 
-    <button onclick="searchProduct()" class="main-btn">
+
+    <button
+      type="button"
+      onclick="searchProduct()"
+      class="main-btn"
+    >
       Product تلاش کریں
     </button>
 
-    <input id="productName" placeholder="Product Name">
+
+    <input
+      id="productName"
+      type="text"
+      placeholder="Product Name"
+    >
+
 
     <div class="row">
-      <input id="purchasePrice" type="number" placeholder="Purchase Price">
-      <input id="salePrice" type="number" placeholder="Sale Price">
+
+      <input
+        id="purchasePrice"
+        type="number"
+        placeholder="Purchase Price"
+      >
+
+      <input
+        id="salePrice"
+        type="number"
+        placeholder="Sale Price"
+      >
+
     </div>
 
-    <input id="quantity" type="number" min="1" value="1">
 
-    <button onclick="saveSale()" class="main-btn">
+    <input
+      id="quantity"
+      type="number"
+      min="1"
+      value="1"
+      placeholder="Quantity"
+    >
+
+
+    <button
+      type="button"
+      onclick="saveSale()"
+      class="main-btn"
+    >
       Sale Save کریں
     </button>
+
   </section>
 
 
-  <!-- NEW PRODUCT -->
+
+  <!-- =========================================
+       NEW PRODUCT SECTION
+  ========================================== -->
+
   <section class="card">
+
     <h2>نیا Product محفوظ کریں</h2>
+
 
     <p class="hint">
       Product کا barcode، نام، prices اور تصویر save کریں۔
     </p>
 
+
+    <!-- BARCODE -->
+
     <div class="barcode-row">
-      <input id="newBarcode" placeholder="Barcode / Product Code">
-      <button onclick="openCamera()" class="camera-btn">📷</button>
+
+      <input
+        id="newBarcode"
+        type="text"
+        placeholder="Barcode / Product Code"
+      >
+
+      <label
+        for="productPhoto"
+        class="camera-btn"
+      >
+        📷
+      </label>
+
     </div>
 
-    <input id="newName" placeholder="Product Name">
+
+    <!-- PRODUCT NAME -->
+
+    <input
+      id="newName"
+      type="text"
+      placeholder="Product Name"
+    >
+
+
+    <!-- PRICES -->
 
     <div class="row">
-      <input id="newCost" type="number" placeholder="Purchase Price">
-      <input id="newPrice" type="number" placeholder="Sale Price">
+
+      <input
+        id="newCost"
+        type="number"
+        placeholder="Purchase Price"
+      >
+
+      <input
+        id="newPrice"
+        type="number"
+        placeholder="Sale Price"
+      >
+
     </div>
 
-    <!-- PRODUCT PHOTO -->
+
+
+    <!-- =========================================
+         CAMERA / PHOTO INPUT
+    ========================================== -->
+
     <input
       id="productPhoto"
       type="file"
       accept="image/*"
       capture="environment"
-      onchange="previewPhoto(event)"
-      hidden
+      style="display:none;"
     >
 
-    <button onclick="openCamera()" class="photo-btn">
+
+    <!-- CAMERA BUTTON -->
+
+    <label
+      for="productPhoto"
+      class="photo-btn"
+    >
       📷 Product کی تصویر لیں
-    </button>
+    </label>
 
-    <img id="photoPreview" class="photo-preview">
 
-    <button onclick="saveProduct()" class="main-btn">
+    <!-- PHOTO PREVIEW -->
+
+    <img
+      id="photoPreview"
+      class="photo-preview"
+      style="display:none;"
+      alt="Product Photo"
+    >
+
+
+    <!-- SAVE PRODUCT -->
+
+    <button
+      type="button"
+      onclick="saveProduct()"
+      class="main-btn"
+    >
       Product Save کریں
     </button>
+
   </section>
 
 
-  <!-- SALES -->
+
+  <!-- =========================================
+       TODAY SALES
+  ========================================== -->
+
   <section class="card">
+
     <h2>آج کی Sales</h2>
+
     <div id="salesList"></div>
+
   </section>
+
 
 </main>
+
+
+<!-- =========================================
+     JAVASCRIPT
+========================================== -->
 
 <script src="app.js"></script>
 
